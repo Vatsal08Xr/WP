@@ -36,9 +36,6 @@ if (!canvas) throw new Error('Mobile canvas not found');
 const ctx = canvas.getContext('2d', { willReadFrequently: true });
 const wrapper = document.getElementById('mobile-canvas-wrapper');
 const outer = document.getElementById('mobile-canvas-container-outer');
-const drawer = document.getElementById('mobile-drawer');
-const backdrop = document.getElementById('drawer-backdrop');
-const drawerOpen = document.getElementById('mobile-drawer-open');
 const themeNameDisplay = document.getElementById('mobile-theme-name-display');
 const mobileThemeToggle = document.getElementById('mobile-theme-toggle');
 const previewDesktopBtn = document.getElementById('mobile-preview-desktop-btn');
@@ -61,18 +58,7 @@ const state = {
     customPalette: { bg: '#18181b', colors: ['#3b82f6', '#8b5cf6', '#ec4899'] }
 };
 
-// ----- Drawer -----
-function openDrawer() {
-    drawer.classList.add('open');
-    backdrop.classList.add('open');
-}
-function closeDrawer() {
-    drawer.classList.remove('open');
-    backdrop.classList.remove('open');
-}
 
-drawerOpen.addEventListener('click', openDrawer);
-backdrop.addEventListener('click', closeDrawer);
 
 // ----- Colors -----
 function getColors() {
@@ -151,7 +137,6 @@ document.querySelectorAll('#mobile-theme-grid .theme-btn').forEach(btn => {
         state.seed = Math.random().toString(36).substring(2, 15);
         updateUI();
         triggerUpdate();
-        closeDrawer();
     });
 });
 
