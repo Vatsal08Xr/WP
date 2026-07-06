@@ -157,7 +157,7 @@
         <div class="flex-1 overflow-y-auto w-full pb-24">
             
             <!-- Mobile canvas section -->
-            <div class="relative overflow-hidden bg-zinc-100 dark:bg-zinc-950 dot-pattern flex items-center justify-center border-b border-zinc-200 dark:border-zinc-800" style="padding: 12px; padding-top: 48px; min-height: 55vh;">
+            <div class="relative overflow-hidden bg-zinc-100 dark:bg-zinc-950 dot-pattern flex flex-col border-b border-zinc-200 dark:border-zinc-800" style="padding: 16px; padding-top: 56px; min-height: 65vh;">
                 <!-- Mobile preview toggle -->
                 <div class="absolute top-3 left-1/2 -translate-x-1/2 z-10 flex bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-0.5 rounded-md shadow-sm">
                     <button id="mobile-preview-desktop-btn" class="px-2.5 py-1 text-xs font-medium rounded text-zinc-900 dark:text-white bg-zinc-100 dark:bg-zinc-800 flex items-center gap-1.5 transition-colors">
@@ -167,7 +167,7 @@
                         <i data-lucide="smartphone" class="w-3.5 h-3.5"></i> Mobile
                     </button>
                 </div>
-                <div id="mobile-canvas-container-outer" class="w-full h-full flex items-center justify-center">
+                <div id="mobile-canvas-container-outer" class="w-full flex-1 flex items-center justify-center">
                     <div id="mobile-canvas-wrapper" style="container-type: inline-size;" class="relative shrink-0 rounded-lg overflow-hidden shadow-xl transition-all duration-300 ease-in-out">
                         <canvas id="mobile-preview-canvas" class="bg-white dark:bg-black block"></canvas>
                     </div>
