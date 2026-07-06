@@ -25,7 +25,8 @@ export function drawTopography(ctx, width, height, colors, rng) {
     // Parameters for domain warping (Zebra / Marble effect)
     // Scale must decrease as resolution increases to maintain the same visual size
     const baseScale = 0.0015 * (1000 / Math.max(width, height)); 
-    const bandFrequency = 60; // How many bands
+    // Scale band count with canvas size so mobile gets fewer, less congested bands
+    const bandFrequency = Math.max(12, Math.round(60 * Math.min(width, height) / 1000));
     const phaseX = rng() * 100;
     const phaseY = rng() * 100;
     
