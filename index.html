@@ -74,7 +74,8 @@
             background-size: 24px 24px;
         }
 
-    </style>
+    </style>    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@simonwep/pickr/dist/themes/nano.min.css"/>
+    <script src="https://cdn.jsdelivr.net/npm/@simonwep/pickr/dist/pickr.min.js"></script>
 </head>
 <body class="bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100 transition-colors duration-300" style="height: 100dvh; overflow: hidden; width: 100vw;">
 
@@ -134,7 +135,7 @@
                         <div class="flex flex-col gap-1.5">
                             <span class="text-[11px] font-medium text-zinc-500 uppercase tracking-wider">Background</span>
                             <div class="flex items-center gap-2 p-1 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded w-fit">
-                                <input type="color" class="custom-bg-color-picker w-5 h-5 p-0 border-0 rounded cursor-pointer shrink-0 bg-transparent" value="#18181b">
+                                <div id="custom-bg-color-picker" class="shrink-0"></div>
                                 <input type="text" id="custom-bg-color" class="w-16 bg-transparent text-xs font-mono outline-none uppercase text-zinc-700 dark:text-zinc-300" value="#18181B" maxlength="7">
                             </div>
                         </div>
@@ -142,15 +143,15 @@
                             <span class="text-[11px] font-medium text-zinc-500 uppercase tracking-wider">Accents</span>
                             <div class="flex gap-2">
                                 <div class="flex flex-1 items-center gap-1.5 p-1 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded">
-                                    <input type="color" class="custom-accent-color-picker w-4 h-4 p-0 border-0 rounded cursor-pointer shrink-0 bg-transparent" value="#3b82f6">
+                                    <div class="custom-accent-color-picker shrink-0"></div>
                                     <input type="text" class="custom-accent-color w-full bg-transparent text-[10px] font-mono outline-none uppercase text-zinc-700 dark:text-zinc-300 min-w-0" value="#3B82F6" maxlength="7">
                                 </div>
                                 <div class="flex flex-1 items-center gap-1.5 p-1 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded">
-                                    <input type="color" class="custom-accent-color-picker w-4 h-4 p-0 border-0 rounded cursor-pointer shrink-0 bg-transparent" value="#8b5cf6">
+                                    <div class="custom-accent-color-picker shrink-0"></div>
                                     <input type="text" class="custom-accent-color w-full bg-transparent text-[10px] font-mono outline-none uppercase text-zinc-700 dark:text-zinc-300 min-w-0" value="#8B5CF6" maxlength="7">
                                 </div>
                                 <div class="flex flex-1 items-center gap-1.5 p-1 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded">
-                                    <input type="color" class="custom-accent-color-picker w-4 h-4 p-0 border-0 rounded cursor-pointer shrink-0 bg-transparent" value="#ec4899">
+                                    <div class="custom-accent-color-picker shrink-0"></div>
                                     <input type="text" class="custom-accent-color w-full bg-transparent text-[10px] font-mono outline-none uppercase text-zinc-700 dark:text-zinc-300 min-w-0" value="#EC4899" maxlength="7">
                                 </div>
                             </div>
@@ -293,7 +294,7 @@
                         <div class="flex flex-col gap-1.5">
                             <span class="text-[11px] font-medium text-zinc-500 uppercase tracking-wider">Background</span>
                             <div class="flex items-center gap-2 p-1 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded w-fit">
-                                <input type="color" class="mobile-custom-bg-color-picker w-5 h-5 p-0 border-0 rounded cursor-pointer shrink-0 bg-transparent" value="#18181b">
+                                <div id="mobile-custom-bg-color-picker" class="shrink-0"></div>
                                 <input type="text" id="mobile-custom-bg-color" class="w-16 bg-transparent text-xs font-mono outline-none uppercase text-zinc-700 dark:text-zinc-300" value="#18181B" maxlength="7">
                             </div>
                         </div>
@@ -301,15 +302,15 @@
                             <span class="text-[11px] font-medium text-zinc-500 uppercase tracking-wider">Accents</span>
                             <div class="flex gap-2">
                                 <div class="flex flex-1 items-center gap-1.5 p-1 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded">
-                                    <input type="color" class="mobile-custom-accent-color-picker w-4 h-4 p-0 border-0 rounded cursor-pointer shrink-0 bg-transparent" value="#3b82f6">
+                                    <div class="mobile-custom-accent-color-picker shrink-0"></div>
                                     <input type="text" class="mobile-custom-accent-color w-full bg-transparent text-[10px] font-mono outline-none uppercase text-zinc-700 dark:text-zinc-300 min-w-0" value="#3B82F6" maxlength="7">
                                 </div>
                                 <div class="flex flex-1 items-center gap-1.5 p-1 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded">
-                                    <input type="color" class="mobile-custom-accent-color-picker w-4 h-4 p-0 border-0 rounded cursor-pointer shrink-0 bg-transparent" value="#8b5cf6">
+                                    <div class="mobile-custom-accent-color-picker shrink-0"></div>
                                     <input type="text" class="mobile-custom-accent-color w-full bg-transparent text-[10px] font-mono outline-none uppercase text-zinc-700 dark:text-zinc-300 min-w-0" value="#8B5CF6" maxlength="7">
                                 </div>
                                 <div class="flex flex-1 items-center gap-1.5 p-1 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded">
-                                    <input type="color" class="mobile-custom-accent-color-picker w-4 h-4 p-0 border-0 rounded cursor-pointer shrink-0 bg-transparent" value="#ec4899">
+                                    <div class="mobile-custom-accent-color-picker shrink-0"></div>
                                     <input type="text" class="mobile-custom-accent-color w-full bg-transparent text-[10px] font-mono outline-none uppercase text-zinc-700 dark:text-zinc-300 min-w-0" value="#EC4899" maxlength="7">
                                 </div>
                             </div>

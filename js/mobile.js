@@ -48,15 +48,65 @@ const dlIphoneBtn = document.getElementById('mobile-btn-dl-iphone');
 const customPaletteEditor = document.getElementById('mobile-custom-palette-editor');
 const customBgColor = document.getElementById('mobile-custom-bg-color');
 const customAccentColors = document.querySelectorAll('.mobile-custom-accent-color');
-const customBgColorPicker = document.querySelector('.mobile-custom-bg-color-picker');
-const customAccentColorPickers = document.querySelectorAll('.mobile-custom-accent-color-picker');
+
+const pickrOptions = {
+    theme: 'nano',
+    components: {
+        preview: true,
+        opacity: false,
+        hue: true,
+        interaction: {
+            hex: true,
+            rgba: true,
+            hsla: false,
+            input: true,
+            clear: false,
+            save: false
+        }
+    }
+};
+
+let mobileBgPickr = null;
+let mobileAccentPickrs = [];
+
+// Initialize Pickrs after DOM load
+document.addEventListener('DOMContentLoaded', () => {
+    const bgPickerEl = document.getElementById('mobile-custom-bg-color-picker');
+    if (bgPickerEl) {
+        mobileBgPickr = Pickr.create({
+            el: bgPickerEl,
+            default: '#18181b',
+            defaultRepresentation: 'HEX',
+            ...pickrOptions
+        });
+        
+        mobileBgPickr.on('change', (color) => {
+            handleBgChange(color.toHEXA().toString());
+        });
+    }
+
+    const accentPickerEls = document.querySelectorAll('.mobile-custom-accent-color-picker');
+    accentPickerEls.forEach((el, index) => {
+        const picker = Pickr.create({
+            el: el,
+            default: '#3b82f6', // Will be overwritten by state sync
+            defaultRepresentation: 'HEX',
+            ...pickrOptions
+        });
+        
+        picker.on('change', (color) => {
+            handleAccentChange(color.toHEXA().toString(), index);
+        });
+        mobileAccentPickrs.push(picker);
+    });
+});
 
 function updateCustomPaletteUI() {
-    if (customBgColorPicker) customBgColorPicker.value = state.customPalette.bg;
+    if (mobileBgPickr) mobileBgPickr.setColor(state.customPalette.bg);
     if (customBgColor) customBgColor.value = state.customPalette.bg.toUpperCase();
     
-    customAccentColorPickers.forEach((picker, i) => {
-        if (state.customPalette.colors[i]) picker.value = state.customPalette.colors[i];
+    mobileAccentPickrs.forEach((picker, i) => {
+        if (state.customPalette.colors[i]) picker.setColor(state.customPalette.colors[i]);
     });
     customAccentColors.forEach((input, i) => {
         if (state.customPalette.colors[i]) input.value = state.customPalette.colors[i].toUpperCase();
@@ -194,7 +244,6 @@ const handleBgChange = (val) => {
 };
 
 if (customBgColor) customBgColor.addEventListener('input', (e) => handleBgChange(e.target.value));
-if (customBgColorPicker) customBgColorPicker.addEventListener('input', (e) => handleBgChange(e.target.value));
 
 const handleAccentChange = (val, index) => {
     if (/^#[0-9A-Fa-f]{6}$/.test(val)) {
@@ -208,12 +257,6 @@ const handleAccentChange = (val, index) => {
 customAccentColors.forEach((input, i) => {
     input.addEventListener('input', e => handleAccentChange(e.target.value, i));
 });
-
-if (customAccentColorPickers) {
-    customAccentColorPickers.forEach((picker, i) => {
-        picker.addEventListener('input', e => handleAccentChange(e.target.value, i));
-    });
-}
 
 mobileThemeToggle?.addEventListener('click', () => {
     state.isDark = !state.isDark;
