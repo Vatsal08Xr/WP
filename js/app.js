@@ -109,7 +109,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (bgPickerEl) {
         bgPickr = Pickr.create({
             el: bgPickerEl,
-            default: '#18181b',
+            default: state.customPalette.bg,
             defaultRepresentation: 'HEX',
             ...pickrOptions
         });
@@ -123,7 +123,7 @@ document.addEventListener('DOMContentLoaded', () => {
     accentPickerEls.forEach((el, index) => {
         const picker = Pickr.create({
             el: el,
-            default: '#3b82f6', // Will be overwritten by state sync
+            default: state.customPalette.colors[index] || '#3b82f6',
             defaultRepresentation: 'HEX',
             ...pickrOptions
         });
@@ -168,6 +168,13 @@ function updateActiveUI() {
 
     if (state.palette === 'custom') {
         customPaletteEditor.classList.remove('hidden');
+        
+        const customBgSection = document.getElementById('custom-bg-section');
+        if (customBgSection) {
+            if (state.theme === 'voronoi') customBgSection.classList.add('hidden');
+            else customBgSection.classList.remove('hidden');
+        }
+
         if (state.theme === 'topography') {
             customAccentColors.forEach((input, i) => {
                 if (i > 0) input.parentElement.classList.add('hidden');
