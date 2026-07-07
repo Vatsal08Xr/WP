@@ -148,24 +148,50 @@ function drawPetal(ctx, cx, cy, r, angle, color, alpha, spreadFactor, rng) {
     ctx.globalAlpha = alpha;
     ctx.fillStyle = color;
 
-    const spread = spreadFactor + rng() * 0.08;
-    const tipX = cx + Math.cos(angle) * r;
-    const tipY = cy + Math.sin(angle) * r;
-
-    // Left control
-    const lAngle = angle - spread;
-    const lX = cx + Math.cos(lAngle) * r * 0.65;
-    const lY = cy + Math.sin(lAngle) * r * 0.65;
-
-    // Right control
-    const rAngle = angle + spread;
-    const rX = cx + Math.cos(rAngle) * r * 0.65;
-    const rY = cy + Math.sin(rAngle) * r * 0.65;
+    const spread = spreadFactor + rng() * 0.05;
+    
+    // Left and right flares
+    const leftAngle = angle - spread;
+    const rightAngle = angle + spread;
+    
+    // Add a tiny bit of organic irregularity
+    const leftR = r * (0.95 + rng() * 0.1);
+    const rightR = r * (0.95 + rng() * 0.1);
+    const centerR = r * (0.83 + rng() * 0.08); // center depression
 
     ctx.beginPath();
     ctx.moveTo(cx, cy);
-    ctx.bezierCurveTo(lX, lY, cx + Math.cos(angle - spread * 0.55) * r * 0.9, cy + Math.sin(angle - spread * 0.55) * r * 0.9, tipX, tipY);
-    ctx.bezierCurveTo(cx + Math.cos(angle + spread * 0.55) * r * 0.9, cy + Math.sin(angle + spread * 0.55) * r * 0.9, rX, rY, cx, cy);
+
+    // Left shoulder out to the left peak
+    ctx.bezierCurveTo(
+        cx + Math.cos(angle - spread * 0.8) * r * 0.45,
+        cy + Math.sin(angle - spread * 0.8) * r * 0.45,
+        cx + Math.cos(leftAngle) * leftR * 0.8,
+        cy + Math.sin(leftAngle) * leftR * 0.8,
+        cx + Math.cos(angle - spread * 0.35) * leftR * 1.02,
+        cy + Math.sin(angle - spread * 0.35) * leftR * 1.02
+    );
+
+    // Dynamic wave/notch down to the center cleft and up to the right peak
+    ctx.bezierCurveTo(
+        cx + Math.cos(angle - spread * 0.15) * centerR * 1.05,
+        cy + Math.sin(angle - spread * 0.15) * centerR * 1.05,
+        cx + Math.cos(angle + spread * 0.15) * centerR * 1.05,
+        cy + Math.sin(angle + spread * 0.15) * centerR * 1.05,
+        cx + Math.cos(angle + spread * 0.35) * rightR * 1.02,
+        cy + Math.sin(angle + spread * 0.35) * rightR * 1.02
+    );
+
+    // Right peak back to base through the right shoulder
+    ctx.bezierCurveTo(
+        cx + Math.cos(rightAngle) * rightR * 0.8,
+        cy + Math.sin(rightAngle) * rightR * 0.8,
+        cx + Math.cos(angle + spread * 0.8) * r * 0.45,
+        cy + Math.sin(angle + spread * 0.8) * r * 0.45,
+        cx,
+        cy
+    );
+
     ctx.closePath();
     ctx.fill();
     ctx.restore();

@@ -15,7 +15,7 @@ import { drawFlowField } from './generators/flowField.js';
 import { drawOrbitals } from './generators/orbitals.js';
 import { drawFlowers } from './generators/flowers.js';
 import { store, renderSavedModal } from './store.js';
-import { generateRandomPalette } from './colorUtils.js';
+import { generateRandomPalette, hslToHex } from './colorUtils.js';
 
 const generators = {
     topography: drawTopography,
@@ -49,7 +49,6 @@ const dlDesktopBtn = document.getElementById('mobile-btn-dl-desktop');
 const dlIphoneBtn = document.getElementById('mobile-btn-dl-iphone');
 const customPaletteEditor = document.getElementById('mobile-custom-palette-editor');
 const customBgColor = document.getElementById('mobile-custom-bg-color');
-const customAccentColors = document.querySelectorAll('.mobile-custom-accent-color');
 const btnLockPattern = document.getElementById('mobile-btn-lock-pattern');
 const btnSaveWallpaper = document.getElementById('mobile-btn-save-wallpaper');
 const btnOpenSaved = document.getElementById('mobile-btn-open-saved');
@@ -86,8 +85,12 @@ function updateUI() {
         btn.classList.toggle('active', btn.dataset.palette === state.palette);
     });
 
-    if (state.palette === 'custom') customPaletteEditor?.classList.remove('hidden');
-    else customPaletteEditor?.classList.add('hidden');
+    if (state.palette === 'custom') {
+        customPaletteEditor?.classList.remove('hidden');
+        renderCustomPaletteInputs();
+    } else {
+        customPaletteEditor?.classList.add('hidden');
+    }
 
     // Preview toggle active state
     const desktopActive = state.previewMode === 'desktop';
@@ -99,6 +102,34 @@ function updateUI() {
 
     wrapper.style.borderRadius = desktopActive ? '6px' : '22px';
     updateHeartUI();
+}
+
+function renderCustomPaletteInputs() {
+    const container = document.getElementById('mobile-accent-colors-container');
+    if (!container) return;
+    
+    const numColors = (state.theme === 'flowers') ? 8 : 3;
+    
+    // Ensure state.customPalette.colors has enough elements
+    while (state.customPalette.colors.length < numColors) {
+        state.customPalette.colors.push(hslToHex(Math.random() * 360, 75, 50));
+    }
+    
+    // Build inputs HTML
+    container.innerHTML = state.customPalette.colors.slice(0, numColors).map((color, idx) => `
+        <input type="color" class="mobile-custom-accent-color w-7 h-7 rounded border border-zinc-300 dark:border-zinc-700 cursor-pointer" value="${color}" data-index="${idx}">
+    `).join('');
+    
+    // Bind listeners
+    const inputs = container.querySelectorAll('.mobile-custom-accent-color');
+    inputs.forEach(input => {
+        input.addEventListener('input', (e) => {
+            const idx = parseInt(e.target.dataset.index);
+            state.customPalette.colors[idx] = e.target.value;
+            updateHeartUI();
+            triggerUpdate();
+        });
+    });
 }
 
 function updateHeartUI() {
@@ -178,13 +209,7 @@ customBgColor?.addEventListener('input', e => {
     triggerUpdate();
 });
 
-customAccentColors.forEach((input, i) => {
-    input.addEventListener('input', e => {
-        state.customPalette.colors[i] = e.target.value;
-        updateHeartUI();
-        triggerUpdate();
-    });
-});
+// ACCENT COLOR EVENT LISTENERS REMOVED (handled dynamically inside renderCustomPaletteInputs)
 
 mobileThemeToggle?.addEventListener('click', () => {
     state.isDark = !state.isDark;
@@ -196,13 +221,11 @@ mobileThemeToggle?.addEventListener('click', () => {
 
 generateBtn?.addEventListener('click', () => {
     if (state.isLocked) {
-        const newColors = generateRandomPalette(state.isDark);
+        const numColors = (state.theme === 'flowers') ? 8 : 3;
+        const newColors = generateRandomPalette(state.isDark, numColors);
         state.palette = 'custom';
         state.customPalette = newColors;
         if(customBgColor) customBgColor.value = newColors.bg;
-        customAccentColors.forEach((input, i) => {
-            if(input) input.value = newColors.colors[i];
-        });
         updateUI();
     } else {
         state.seed = Math.random().toString(36).substring(2, 15);
@@ -263,9 +286,6 @@ btnOpenSaved?.addEventListener('click', () => {
         // Sync custom palette inputs
         if (state.palette === 'custom' && state.customPalette) {
             if(customBgColor) customBgColor.value = state.customPalette.bg;
-            customAccentColors.forEach((input, i) => {
-                if (state.customPalette.colors[i]) input.value = state.customPalette.colors[i];
-            });
         }
         
         updateUI();

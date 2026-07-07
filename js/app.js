@@ -15,7 +15,7 @@ import { drawFlowField } from './generators/flowField.js';
 import { drawOrbitals } from './generators/orbitals.js';
 import { drawFlowers } from './generators/flowers.js';
 import { store, renderSavedModal } from './store.js';
-import { generateRandomPalette } from './colorUtils.js';
+import { generateRandomPalette, hslToHex } from './colorUtils.js';
 
 const generators = {
     topography: drawTopography,
@@ -73,7 +73,6 @@ const savedModalContent = document.getElementById('saved-modal-content');
 
 const customPaletteEditor = document.getElementById('custom-palette-editor');
 const customBgColor = document.getElementById('custom-bg-color');
-const customAccentColors = document.querySelectorAll('.custom-accent-color');
 
 function getColors() {
     if (state.palette === 'custom') {
@@ -94,8 +93,12 @@ function updateActiveUI() {
         else btn.classList.remove('active');
     });
 
-    if (state.palette === 'custom') customPaletteEditor.classList.remove('hidden');
-    else customPaletteEditor.classList.add('hidden');
+    if (state.palette === 'custom') {
+        customPaletteEditor.classList.remove('hidden');
+        renderCustomPaletteInputs();
+    } else {
+        customPaletteEditor.classList.add('hidden');
+    }
 
     if (state.previewMode === 'desktop') {
         previewDesktopBtn.classList.replace('text-zinc-500', 'text-zinc-900');
@@ -119,6 +122,34 @@ function updateActiveUI() {
         wrapper.style.borderRadius = '32px';
     }
     updateHeartUI();
+}
+
+function renderCustomPaletteInputs() {
+    const container = document.getElementById('accent-colors-container');
+    if (!container) return;
+    
+    const numColors = (state.theme === 'flowers') ? 8 : 3;
+    
+    // Ensure state.customPalette.colors has enough elements
+    while (state.customPalette.colors.length < numColors) {
+        state.customPalette.colors.push(hslToHex(Math.random() * 360, 75, 50));
+    }
+    
+    // Build inputs HTML
+    container.innerHTML = state.customPalette.colors.slice(0, numColors).map((color, idx) => `
+        <input type="color" class="custom-accent-color w-7 h-7 rounded border border-zinc-300 dark:border-zinc-700 cursor-pointer" value="${color}" data-index="${idx}">
+    `).join('');
+    
+    // Bind listeners
+    const inputs = container.querySelectorAll('.custom-accent-color');
+    inputs.forEach(input => {
+        input.addEventListener('input', (e) => {
+            const idx = parseInt(e.target.dataset.index);
+            state.customPalette.colors[idx] = e.target.value;
+            updateHeartUI();
+            triggerUpdate();
+        });
+    });
 }
 
 function updateHeartUI() {
@@ -211,13 +242,7 @@ customBgColor.addEventListener('input', (e) => {
     triggerUpdate();
 });
 
-customAccentColors.forEach((input, index) => {
-    input.addEventListener('input', (e) => {
-        state.customPalette.colors[index] = e.target.value;
-        updateHeartUI();
-        triggerUpdate();
-    });
-});
+// ACCENT COLOR EVENT LISTENERS REMOVED (now handled dynamically inside renderCustomPaletteInputs)
 
 themeToggle.addEventListener('click', () => {
     state.isDark = !state.isDark;
@@ -228,12 +253,11 @@ themeToggle.addEventListener('click', () => {
 
 btnGenerate.addEventListener('click', () => {
     if (state.isLocked) {
-        // Randomize colors using HSL generator instead of new pattern
-        const newColors = generateRandomPalette(state.isDark);
+        const numColors = (state.theme === 'flowers') ? 8 : 3;
+        const newColors = generateRandomPalette(state.isDark, numColors);
         state.palette = 'custom';
         state.customPalette = newColors;
         customBgColor.value = newColors.bg;
-        customAccentColors.forEach((input, i) => input.value = newColors.colors[i]);
         updateActiveUI();
     } else {
         // Generate entirely new pattern variation
@@ -290,9 +314,6 @@ function openSavedModal() {
         // Sync custom palette inputs
         if (state.palette === 'custom' && state.customPalette) {
             customBgColor.value = state.customPalette.bg;
-            customAccentColors.forEach((input, i) => {
-                if (state.customPalette.colors[i]) input.value = state.customPalette.colors[i];
-            });
         }
         
         updateActiveUI();
