@@ -45,21 +45,6 @@ export const store = {
         saved = saved.filter(item => String(item.id) !== String(id));
         localStorage.setItem('wallgen_saved', JSON.stringify(saved));
         window.dispatchEvent(new CustomEvent('saved-wallpapers-changed'));
-    },
-    removeByState(state) {
-        const saved = this.getSaved();
-        const itemToRemove = saved.find(item => {
-            if (item.theme !== state.theme || item.seed !== state.seed || item.palette !== state.palette) return false;
-            if (state.palette === 'custom') {
-                if (!item.customPalette || !state.customPalette) return false;
-                return item.customPalette.bg === state.customPalette.bg && 
-                       item.customPalette.colors.join(',') === state.customPalette.colors.join(',');
-            }
-            return true;
-        });
-        if (itemToRemove) {
-            this.remove(itemToRemove.id);
-        }
     }
 };
 
@@ -142,8 +127,7 @@ function getIconForTheme(theme) {
         nebula: 'cloud',
         gridGlitch: 'binary',
         flowField: 'wind',
-        orbitals: 'aperture',
-        flowers: 'flower'
+        orbitals: 'aperture'
     };
     return icons[theme] || 'image';
 }

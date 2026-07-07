@@ -9,7 +9,7 @@ export function hslToHex(h, s, l) {
     return `#${f(0)}${f(8)}${f(4)}`;
 }
 
-export function generateRandomPalette(isDark, numColors = 3) {
+export function generateRandomPalette(isDark) {
     const baseHue = Math.floor(Math.random() * 360);
     
     // Background color
@@ -17,11 +17,10 @@ export function generateRandomPalette(isDark, numColors = 3) {
     const bgS = Math.floor(Math.random() * 15); // low saturation for bg
     const bg = hslToHex(baseHue, bgS, bgL);
     
-    // Accent colors
+    // 3 accent colors (analogous or triadic scheme)
     const colors = [];
-    const hueStep = numColors <= 3 
-        ? (30 + Math.floor(Math.random() * 90)) 
-        : Math.floor(360 / numColors); // Even distribution for larger palettes
+    const numColors = 3;
+    const hueStep = 30 + Math.floor(Math.random() * 90); // 30 to 120 degree shifts
     
     for (let i = 0; i < numColors; i++) {
         const h = (baseHue + (i + 1) * hueStep) % 360;
