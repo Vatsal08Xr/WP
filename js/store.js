@@ -127,7 +127,8 @@ function getIconForTheme(theme) {
         nebula: 'cloud',
         gridGlitch: 'binary',
         flowField: 'wind',
-        orbitals: 'aperture'
+        orbitals: 'aperture',
+        flowers: 'flower'
     };
     return icons[theme] || 'image';
 }

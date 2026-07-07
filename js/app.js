@@ -13,6 +13,7 @@ import { drawNebula } from './generators/nebula.js';
 import { drawGridGlitch } from './generators/gridGlitch.js';
 import { drawFlowField } from './generators/flowField.js';
 import { drawOrbitals } from './generators/orbitals.js';
+import { drawFlowers } from './generators/flowers.js';
 import { store, renderSavedModal } from './store.js';
 import { generateRandomPalette } from './colorUtils.js';
 
@@ -28,7 +29,8 @@ const generators = {
     nebula: drawNebula,
     gridGlitch: drawGridGlitch,
     flowField: drawFlowField,
-    orbitals: drawOrbitals
+    orbitals: drawOrbitals,
+    flowers: drawFlowers
 };
 
 let state = {
