@@ -105,6 +105,17 @@ let accentPickrs = [];
 
 // Initialize Pickrs after DOM load
 document.addEventListener('DOMContentLoaded', () => {
+    const fixPickrInput = (instance) => {
+        const input = instance.getRoot().interaction.result;
+        input.addEventListener('input', (e) => {
+            let val = e.target.value;
+            if (val.length > 0 && !val.startsWith('#')) {
+                e.target.value = '#' + val;
+                instance.setColor('#' + val);
+            }
+        });
+    };
+
     const bgPickerEl = document.getElementById('custom-bg-color-picker');
     if (bgPickerEl) {
         bgPickr = Pickr.create({
@@ -114,6 +125,7 @@ document.addEventListener('DOMContentLoaded', () => {
             ...pickrOptions
         });
         
+        bgPickr.on('init', fixPickrInput);
         bgPickr.on('change', (color) => {
             handleBgChange(color.toHEXA().toString());
         });
@@ -128,6 +140,7 @@ document.addEventListener('DOMContentLoaded', () => {
             ...pickrOptions
         });
         
+        picker.on('init', fixPickrInput);
         picker.on('change', (color) => {
             handleAccentChange(color.toHEXA().toString(), index);
         });

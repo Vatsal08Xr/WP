@@ -71,6 +71,17 @@ let mobileAccentPickrs = [];
 
 // Initialize Pickrs after DOM load
 document.addEventListener('DOMContentLoaded', () => {
+    const fixPickrInput = (instance) => {
+        const input = instance.getRoot().interaction.result;
+        input.addEventListener('input', (e) => {
+            let val = e.target.value;
+            if (val.length > 0 && !val.startsWith('#')) {
+                e.target.value = '#' + val;
+                instance.setColor('#' + val);
+            }
+        });
+    };
+
     const bgPickerEl = document.getElementById('mobile-custom-bg-color-picker');
     if (bgPickerEl) {
         mobileBgPickr = Pickr.create({
@@ -80,6 +91,7 @@ document.addEventListener('DOMContentLoaded', () => {
             ...pickrOptions
         });
         
+        mobileBgPickr.on('init', fixPickrInput);
         mobileBgPickr.on('change', (color) => {
             handleBgChange(color.toHEXA().toString());
         });
@@ -94,6 +106,7 @@ document.addEventListener('DOMContentLoaded', () => {
             ...pickrOptions
         });
         
+        picker.on('init', fixPickrInput);
         picker.on('change', (color) => {
             handleAccentChange(color.toHEXA().toString(), index);
         });
