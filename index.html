@@ -61,10 +61,16 @@
         <aside class="w-[360px] flex-shrink-0 h-full border-r border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 flex flex-col z-10">
             <div class="p-6 border-b border-zinc-200 dark:border-zinc-800 flex justify-between items-center">
                 <h1 class="text-xl font-bold tracking-tight">Wallpaper Gen</h1>
-                <button id="theme-toggle" class="p-2 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors" title="Toggle Dark/Light Mode">
-                    <i data-lucide="moon" class="w-5 h-5 dark:hidden"></i>
-                    <i data-lucide="sun" class="w-5 h-5 hidden dark:block"></i>
-                </button>
+                <div class="flex items-center gap-1">
+                    <!-- Replace the href with your actual Buy Me A Coffee link -->
+                    <a href="https://www.buymeacoffee.com/" target="_blank" rel="noopener noreferrer" class="flex items-center gap-2 px-3 py-1.5 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors text-sm font-medium" title="Support this project">
+                        <i data-lucide="coffee" class="w-4 h-4 text-amber-600 dark:text-amber-400"></i> <span class="hidden xl:inline">Donate</span>
+                    </a>
+                    <button id="theme-toggle" class="p-2 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors" title="Toggle Dark/Light Mode">
+                        <i data-lucide="moon" class="w-5 h-5 dark:hidden"></i>
+                        <i data-lucide="sun" class="w-5 h-5 hidden dark:block"></i>
+                    </button>
+                </div>
             </div>
             <div class="flex-1 overflow-y-auto p-6 space-y-8">
                 <div class="space-y-3">
@@ -154,7 +160,11 @@
         <!-- Mobile top bar -->
         <div class="flex-shrink-0 flex items-center justify-between px-4 py-3 bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 z-20 shadow-sm relative">
             <h1 class="text-lg font-bold tracking-tight">Wallpaper Gen</h1>
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-1">
+                <!-- Replace the href with your actual Buy Me A Coffee link -->
+                <a href="https://www.buymeacoffee.com/" target="_blank" rel="noopener noreferrer" class="p-2 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors text-amber-600 dark:text-amber-400" title="Buy me a coffee">
+                    <i data-lucide="coffee" class="w-5 h-5"></i>
+                </a>
                 <button id="mobile-theme-toggle" class="p-2 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors">
                     <i data-lucide="moon" class="w-5 h-5 dark:hidden"></i>
                     <i data-lucide="sun" class="w-5 h-5 hidden dark:block"></i>
