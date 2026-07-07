@@ -11,6 +11,7 @@ export const store = {
         return saved.some(item => {
             if (item.theme !== state.theme || item.seed !== state.seed || item.palette !== state.palette) return false;
             if (state.palette === 'custom') {
+                if (!item.customPalette || !state.customPalette) return false;
                 return item.customPalette.bg === state.customPalette.bg && 
                        item.customPalette.colors.join(',') === state.customPalette.colors.join(',');
             }
