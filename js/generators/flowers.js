@@ -2,158 +2,247 @@ export function drawFlowers(ctx, width, height, colors, rng) {
     const scale = Math.min(width, height);
     const isDarkBackground = isBgDark(colors.bg);
 
-    // Pick 12 random styles for Petals, Leaves, and Stems based on seed
-    const petalStyle = Math.floor(rng() * 12);
-    const leafStyle = Math.floor(rng() * 12);
-    const stemStyle = Math.floor(rng() * 12);
-
-    // 1. Atmospheric radial gradient background
+    // 1. Solid background with a rich atmospheric radial gradient
     const gradient = ctx.createRadialGradient(
         width / 2, height / 2, 10,
-        width / 2, height / 2, Math.max(width, height)
+        width / 2, height / 2, Math.max(width, height) * 0.8
     );
     gradient.addColorStop(0, adjustColorBrightness(colors.bg, 1.25));
+    gradient.addColorStop(0.6, adjustColorBrightness(colors.bg, 0.9));
     gradient.addColorStop(1, colors.bg);
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, width, height);
 
-    // 2. Extend palette to 8 colors
+    // 2. Extend palette to 8 vivid colors
     const palette = buildFlowerPalette(colors, rng, isDarkBackground);
 
-    // 3. Draw swirls in the background
+    // 3. Draw soft swirling ambient depth layers
     drawSwirls(ctx, width, height, palette, rng, isDarkBackground, scale);
 
-    const stemColor = colors.colors[0];
-    const mainStem = {
-        startX: width * (0.45 + rng() * 0.1),
-        startY: height,
-        endX: width * (0.45 + rng() * 0.1) + (rng() - 0.5) * width * 0.2,
-        endY: height * (0.15 + rng() * 0.1),
-    };
+    // 4. Select one of the 12 natural botanical species styles based on seed
+    const speciesIndex = Math.floor(rng() * 12);
 
-    const cp1x = mainStem.startX + (rng() - 0.5) * width * 0.2;
-    const cp1y = height * 0.65;
-    const cp2x = mainStem.endX + (rng() - 0.5) * width * 0.15;
-    const cp2y = mainStem.endY + height * 0.25;
+    // 5. Generate 5-8 flowers positioned to fill 83%-85% of the canvas
+    const numFlowers = 5 + Math.floor(rng() * 4); // 5 to 8 flowers
+    const flowers = [];
 
-    // Draw main thick stem
-    drawStyledStem(ctx, mainStem.startX, mainStem.startY, mainStem.endX, mainStem.endY, cp1x, cp1y, cp2x, cp2y, stemColor, scale * 0.007, stemStyle, rng);
+    // Grid-based layout with randomized offsets to guarantee complete coverage
+    const rows = 3;
+    const cols = 3;
+    const cells = [
+        { r: 0, c: 1, yMin: 0.18, yMax: 0.32, xMin: 0.40, xMax: 0.60 }, // Top Center
+        { r: 1, c: 0, yMin: 0.38, yMax: 0.55, xMin: 0.15, xMax: 0.35 }, // Mid Left
+        { r: 1, c: 2, yMin: 0.35, yMax: 0.52, xMin: 0.65, xMax: 0.85 }, // Mid Right
+        { r: 2, c: 0, yMin: 0.62, yMax: 0.78, xMin: 0.20, xMax: 0.40 }, // Bottom Left
+        { r: 2, c: 2, yMin: 0.60, yMax: 0.76, xMin: 0.60, xMax: 0.80 }, // Bottom Right
+        { r: 1, c: 1, yMin: 0.42, yMax: 0.60, xMin: 0.42, xMax: 0.58 }, // Mid Center
+        { r: 0, c: 0, yMin: 0.20, yMax: 0.35, xMin: 0.12, xMax: 0.28 }, // Top Left
+        { r: 0, c: 2, yMin: 0.18, yMax: 0.33, xMin: 0.72, xMax: 0.88 }, // Top Right
+    ];
 
-    // Generate side branches
-    const numBranches = 5 + Math.floor(rng() * 3); // 5 to 7 side shoots
-    const branches = [];
+    // Shuffle cells to pick random distinct spots
+    for (let i = cells.length - 1; i > 0; i--) {
+        const j = Math.floor(rng() * (i + 1));
+        const temp = cells[i];
+        cells[i] = cells[j];
+        cells[j] = temp;
+    }
 
-    for (let i = 0; i < numBranches; i++) {
-        const t = 0.25 + (i / (numBranches - 1)) * 0.6 + (rng() - 0.5) * 0.05;
-        const pt = getBezierPoint(t, mainStem.startX, mainStem.startY, cp1x, cp1y, cp2x, cp2y, mainStem.endX, mainStem.endY);
+    for (let i = 0; i < numFlowers; i++) {
+        const cell = cells[i];
+        const cx = width * (cell.xMin + rng() * (cell.xMax - cell.xMin));
+        const cy = height * (cell.yMin + rng() * (cell.yMax - cell.yMin));
         
-        const tangent = getBezierTangent(t, mainStem.startX, mainStem.startY, cp1x, cp1y, cp2x, cp2y, mainStem.endX, mainStem.endY);
-        const stemAngle = Math.atan2(tangent.y, tangent.x);
-
-        const dir = (i % 2 === 0) ? -1 : 1;
-        const branchAngle = stemAngle + dir * (Math.PI / 3.5 + rng() * Math.PI / 6);
+        // Large canvas-filling sizes (scale * 0.16 to 0.26)
+        const r = scale * (0.16 + rng() * 0.10);
         
-        const branchLength = scale * (0.22 + rng() * 0.12) * (1.1 - t * 0.65);
-        const bx = pt.x + Math.cos(branchAngle) * branchLength;
-        const by = pt.y + Math.sin(branchAngle) * branchLength;
-
-        const bcp1x = pt.x + Math.cos(branchAngle - dir * 0.15) * branchLength * 0.55;
-        const bcp1y = pt.y + Math.sin(branchAngle - dir * 0.15) * branchLength * 0.55;
-
-        branches.push({
-            startX: pt.x,
-            startY: pt.y,
-            endX: bx,
-            endY: by,
-            bcp1x: bcp1x,
-            bcp1y: bcp1y,
-            color: palette[(i + 1) % palette.length],
-            secondaryColor: palette[(i + 2) % palette.length],
-            angle: branchAngle,
-            t: t,
-            dir: dir
+        const ci = i % palette.length;
+        flowers.push({
+            x: cx,
+            y: cy,
+            r: r,
+            color: palette[ci],
+            color2: palette[(ci + 2) % palette.length],
+            color3: palette[(ci + 4) % palette.length],
+            petals: getPetalCountForSpecies(speciesIndex, rng),
+            angleOffset: rng() * Math.PI * 2
         });
     }
 
-    // Draw side branches
-    branches.forEach(branch => {
-        drawStyledStem(ctx, branch.startX, branch.startY, branch.endX, branch.endY, branch.bcp1x, branch.bcp1y, branch.bcp1x, branch.bcp1y, stemColor, scale * 0.0035, stemStyle, rng);
+    // Sort flowers bottom-to-top by Y so lower background elements are drawn first
+    flowers.sort((a, b) => b.y - a.y);
 
-        // Draw multiple enlarged leaves along each branch
-        const leafTValues = [0.35, 0.75];
-        leafTValues.forEach((lt, idx) => {
-            const leafPt = getQuadraticPoint(lt, branch.startX, branch.startY, branch.bcp1x, branch.bcp1y, branch.endX, branch.endY);
-            const leafAngle = branch.angle + (idx === 0 ? -1 : 1) * (0.35 + rng() * 0.35);
-            // Enlarged leaf sizes (from 0.035 up to 0.12 scale)
-            const leafSize = scale * (0.11 + rng() * 0.05) * (1.0 - branch.t * 0.4);
-            drawStyledLeaf(ctx, leafPt.x, leafPt.y, leafSize, leafAngle, branch.color, isDarkBackground, leafStyle, rng);
+    // 6. Draw 2-3 thick parent stems fanning out from the bottom to carry all branches
+    const numParentStems = 3;
+    const parentStems = [];
+    for (let i = 0; i < numParentStems; i++) {
+        const px = width * (0.35 + i * 0.15 + (rng() - 0.5) * 0.05);
+        parentStems.push({ x: px, y: height });
+    }
+
+    // Connect each flower back to its nearest parent stem using branching Bezier curves
+    flowers.forEach(f => {
+        // Find nearest parent stem start
+        let nearestParent = parentStems[0];
+        let minDist = Math.abs(f.x - nearestParent.x);
+        parentStems.forEach(ps => {
+            const d = Math.abs(f.x - ps.x);
+            if (d < minDist) {
+                minDist = d;
+                nearestParent = ps;
+            }
+        });
+
+        const startX = nearestParent.x;
+        const startY = nearestParent.y;
+
+        // Custom curve parameters
+        const cp1x = startX + (f.x - startX) * 0.3 + (rng() - 0.5) * width * 0.15;
+        const cp1y = startY - (startY - f.y) * 0.4;
+        const cp2x = f.x - (f.x - startX) * 0.2 + (rng() - 0.5) * width * 0.1;
+        const cp2y = f.y + (startY - f.y) * 0.3;
+
+        // Draw Stem
+        drawStemForSpecies(ctx, startX, startY, f.x, f.y, cp1x, cp1y, cp2x, cp2y, colors.colors[0], scale * 0.005, speciesIndex, rng);
+
+        // Store stem points for leaf placements
+        f._stemStartX = startX; f._stemStartY = startY;
+        f._stemCp1x = cp1x; f._stemCp1y = cp1y;
+        f._stemCp2x = cp2x; f._stemCp2y = cp2y;
+    });
+
+    // 7. Draw large matching foliage leaves along the stems
+    flowers.forEach(f => {
+        if (!f._stemStartX) return;
+        const tValues = [0.35, 0.7];
+        tValues.forEach((t, idx) => {
+            const pt = getBezierPoint(t, f._stemStartX, f._stemStartY, f._stemCp1x, f._stemCp1y, f._stemCp2x, f._stemCp2y, f.x, f.y);
+            const tangent = getBezierTangent(t, f._stemStartX, f._stemStartY, f._stemCp1x, f._stemCp1y, f._stemCp2x, f._stemCp2y, f.x, f.y);
+            const stemAngle = Math.atan2(tangent.y, tangent.x);
+            
+            const dir = (idx === 0) ? -1 : 1;
+            const leafAngle = stemAngle + dir * (Math.PI / 2.3 + rng() * 0.3);
+            
+            // Large elegant leaf sizes (scale * 0.12 to 0.20)
+            const leafSize = scale * (0.13 + rng() * 0.07);
+            drawLeafForSpecies(ctx, pt.x, pt.y, leafSize, leafAngle, f.color, isDarkBackground, speciesIndex, rng);
         });
     });
 
-    // Draw leaves on the main stem too
-    const stemLeafTValues = [0.3, 0.5, 0.7];
-    stemLeafTValues.forEach((slt, idx) => {
-        const leafPt = getBezierPoint(slt, mainStem.startX, mainStem.startY, cp1x, cp1y, cp2x, cp2y, mainStem.endX, mainStem.endY);
-        const tangent = getBezierTangent(slt, mainStem.startX, mainStem.startY, cp1x, cp1y, cp2x, cp2y, mainStem.endX, mainStem.endY);
-        const stemAngle = Math.atan2(tangent.y, tangent.x);
-        const dir = (idx % 2 === 0) ? -1 : 1;
-        const leafAngle = stemAngle + dir * (Math.PI / 2.3 + rng() * 0.3);
-        const leafSize = scale * (0.14 + rng() * 0.04);
-        drawStyledLeaf(ctx, leafPt.x, leafPt.y, leafSize, leafAngle, palette[idx % palette.length], isDarkBackground, leafStyle, rng);
+    // 8. Draw translucent glowing flower head petals
+    ctx.globalCompositeOperation = isDarkBackground ? 'screen' : 'multiply';
+    flowers.forEach(f => {
+        drawFlowerHead(ctx, f, isDarkBackground, rng, speciesIndex);
     });
 
-    // Draw flower heads (Blossoms or Buds depending on maturity/height)
-    if (isDarkBackground) {
-        ctx.globalCompositeOperation = 'screen';
-    } else {
-        ctx.globalCompositeOperation = 'multiply';
-    }
-
-    branches.forEach(branch => {
-        const r = scale * (0.075 + rng() * 0.035) * (1.2 - branch.t * 0.7);
-
-        if (r > scale * 0.04) {
-            // Fully open blossoms on lower/middle branches
-            const flower = {
-                x: branch.endX,
-                y: branch.endY,
-                r: r,
-                color: branch.color,
-                secondaryColor: branch.secondaryColor,
-                color3: palette[Math.floor(rng() * palette.length)],
-                petals: Math.floor(rng() * 3) + 5,
-                angleOffset: rng() * Math.PI * 2
-            };
-            drawFlowerHead(ctx, flower, isDarkBackground, rng, palette, petalStyle);
-        } else {
-            // Closed/half-open buds on higher/smaller shoots
-            drawBud(ctx, branch.endX, branch.endY, r * 1.5, branch.angle, branch.color, stemColor, isDarkBackground);
-        }
+    // 9. Draw detailed vein structures on top
+    ctx.globalCompositeOperation = 'source-over';
+    flowers.forEach(f => {
+        drawVeins(ctx, f, rng, scale, isDarkBackground, speciesIndex);
     });
 
-    // Draw main terminal bud at the very tip of the main stem
-    const terminalR = scale * 0.042;
-    const terminalAngle = Math.atan2(mainStem.endY - cp2y, mainStem.endX - cp2x);
-    drawBud(ctx, mainStem.endX, mainStem.endY, terminalR * 1.4, terminalAngle, palette[palette.length - 1], stemColor, isDarkBackground);
+    // 10. Draw glowing stamens in the center
+    ctx.globalCompositeOperation = isDarkBackground ? 'screen' : 'source-over';
+    flowers.forEach(f => {
+        drawCenter(ctx, f, rng, scale, isDarkBackground, speciesIndex);
+    });
 
     ctx.globalCompositeOperation = 'source-over';
     ctx.globalAlpha = 1.0;
 }
 
 // ==========================================
-// 12 DISTINCT LEAF STYLES
+// THE 12 NATURAL SPECIES STYLE SELECTORS
 // ==========================================
-function drawStyledLeaf(ctx, x, y, size, angle, color, isDark, styleIndex, rng) {
+
+function getPetalCountForSpecies(index, rng) {
+    const counts = [
+        5,  // 0. Poppy (5 broad petals)
+        8,  // 1. Lotus (8 pointed petals)
+        12, // 2. Peony (Dense layered multi-petals)
+        5,  // 3. Orchid (Asymmetric 5 petals)
+        6,  // 4. Magnolia (6 broad petals)
+        5,  // 5. Sakura (5 notched petals)
+        6,  // 6. Tulip (6 cupped petals)
+        16, // 7. Daisy (16 thin radiating petals)
+        6,  // 8. Ginkgo (6 fan-like petals)
+        5,  // 9. Hibiscus (5 large flared petals)
+        7,  // 10. Wildflower (7 starry pointed petals)
+        8   // 11. Clematis (8 large flat pointed petals)
+    ];
+    return counts[index] || 5;
+}
+
+// ---- DRAW STEM FOR SPECIES ----
+function drawStemForSpecies(ctx, x1, y1, x4, y4, x2, y2, x3, y3, color, baseWidth, speciesIndex, rng) {
+    ctx.save();
+    ctx.strokeStyle = color;
+    ctx.fillStyle = color;
+    ctx.globalAlpha = 0.5;
+
+    // Species 1 (Lotus) has hollow double stems, Species 4 (Magnolia) segmented woody stems
+    if (speciesIndex === 1) { // Lotus double hollow stems
+        [-1.5, 1.5].forEach(offset => {
+            ctx.beginPath();
+            ctx.moveTo(x1 + offset, y1);
+            ctx.bezierCurveTo(x2 + offset, y2, x3 + offset, y3, x4, y4);
+            ctx.lineWidth = baseWidth * 0.45;
+            ctx.stroke();
+        });
+    } else if (speciesIndex === 4) { // Magnolia Segmented Woody
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.bezierCurveTo(x2, y2, x3, y3, x4, y4);
+        ctx.lineWidth = baseWidth * 1.2;
+        ctx.stroke();
+
+        // Draw small nodes
+        const nodes = 4;
+        for (let i = 1; i < nodes; i++) {
+            const t = i / nodes;
+            const pt = getBezierPoint(t, x1, y1, x2, y2, x3, y3, x4, y4);
+            ctx.beginPath();
+            ctx.arc(pt.x, pt.y, baseWidth * 1.8, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    } else if (speciesIndex === 11) { // Clematis Twisting vine
+        const steps = 40;
+        ctx.lineWidth = baseWidth * 0.55;
+        ctx.beginPath();
+        for (let s = 0; s <= steps; s++) {
+            const t = s / steps;
+            const pt = getBezierPoint(t, x1, y1, x2, y2, x3, y3, x4, y4);
+            const tangent = getBezierTangent(t, x1, y1, x2, y2, x3, y3, x4, y4);
+            const normalAngle = Math.atan2(tangent.y, tangent.x) + Math.PI / 2;
+            const offset = Math.sin(t * Math.PI * 12) * baseWidth * 0.9;
+            const sx = pt.x + Math.cos(normalAngle) * offset;
+            const sy = pt.y + Math.sin(normalAngle) * offset;
+            if (s === 0) ctx.moveTo(sx, sy);
+            else ctx.lineTo(sx, sy);
+        }
+        ctx.stroke();
+    } else { // Standard sinuous elegant stem
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.bezierCurveTo(x2, y2, x3, y3, x4, y4);
+        ctx.lineWidth = baseWidth;
+        ctx.stroke();
+    }
+    ctx.restore();
+}
+
+// ---- DRAW LEAF FOR SPECIES ----
+function drawLeafForSpecies(ctx, x, y, size, angle, color, isDark, speciesIndex, rng) {
     ctx.save();
     ctx.translate(x, y);
     ctx.rotate(angle);
 
-    ctx.globalAlpha = isDark ? 0.18 : 0.32;
+    ctx.globalAlpha = isDark ? 0.16 : 0.28;
     ctx.fillStyle = color;
     ctx.strokeStyle = color;
 
-    switch (styleIndex) {
-        case 0: // Skeletal Lanceolate (Detailed, parallel veins, x-ray look)
+    switch (speciesIndex) {
+        case 0: // Poppy (Ovate, detailed veins)
         default:
             ctx.beginPath();
             ctx.moveTo(0, 0);
@@ -162,140 +251,39 @@ function drawStyledLeaf(ctx, x, y, size, angle, color, isDark, styleIndex, rng) 
             ctx.closePath();
             ctx.fill();
 
-            // Center vein
-            ctx.globalAlpha = isDark ? 0.45 : 0.55;
-            ctx.lineWidth = size * 0.02;
-            ctx.beginPath();
-            ctx.moveTo(0, 0);
-            ctx.lineTo(size * 0.95, 0);
-            ctx.stroke();
-
-            // Fine parallel veins
-            ctx.lineWidth = size * 0.007;
-            ctx.globalAlpha = isDark ? 0.35 : 0.45;
-            const numSkeletalVeins = 10;
-            for (let v = 1; v <= numSkeletalVeins; v++) {
-                const vx = size * (v / (numSkeletalVeins + 1));
-                const vy = size * 0.14 * Math.sin((v / (numSkeletalVeins + 1)) * Math.PI);
-                [-1, 1].forEach(d => {
-                    ctx.beginPath();
-                    ctx.moveTo(vx, 0);
-                    ctx.quadraticCurveTo(vx + size * 0.05, d * vy * 0.5, vx + size * 0.08, d * vy);
-                    ctx.stroke();
-                });
-            }
-            break;
-
-        case 1: // Fern Pinnate (Leaflets along a rib)
-            ctx.lineWidth = size * 0.015;
+            // Veins
             ctx.globalAlpha = isDark ? 0.4 : 0.5;
-            ctx.beginPath();
-            ctx.moveTo(0, 0);
-            ctx.lineTo(size, 0);
-            ctx.stroke();
+            ctx.lineWidth = size * 0.015;
+            ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(size * 0.95, 0); ctx.stroke();
 
-            const numLeaflets = 7;
-            ctx.globalAlpha = isDark ? 0.22 : 0.35;
-            for (let v = 0; v < numLeaflets; v++) {
-                const lx = size * (v / numLeaflets) * 0.9 + size * 0.1;
-                const lSize = size * 0.25 * (1.1 - (v / numLeaflets));
-                [-1, 1].forEach(d => {
-                    ctx.save();
-                    ctx.translate(lx, 0);
-                    ctx.rotate(d * (Math.PI / 3.5));
-                    ctx.beginPath();
-                    ctx.ellipse(lSize, 0, lSize, lSize * 0.35, 0, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.restore();
-                });
-            }
-            break;
-
-        case 2: // Ginkgo Fan Leaf
-            ctx.beginPath();
-            ctx.moveTo(0, 0);
-            ctx.bezierCurveTo(size * 0.2, -size * 0.4, size * 0.7, -size * 0.65, size, -size * 0.2);
-            ctx.quadraticCurveTo(size * 0.85, 0, size, size * 0.2);
-            ctx.bezierCurveTo(size * 0.7, size * 0.65, size * 0.2, size * 0.4, 0, 0);
-            ctx.closePath();
-            ctx.fill();
-
-            // Radiating fan veins
-            ctx.globalAlpha = isDark ? 0.35 : 0.45;
             ctx.lineWidth = size * 0.007;
-            const fanVeins = 7;
-            for (let i = 0; i < fanVeins; i++) {
-                const fAngle = -0.6 + (i / (fanVeins - 1)) * 1.2;
-                ctx.beginPath();
-                ctx.moveTo(0, 0);
-                ctx.lineTo(Math.cos(fAngle) * size * 0.85, Math.sin(fAngle) * size * 0.85);
-                ctx.stroke();
-            }
-            break;
-
-        case 3: // Monstera Clefted Leaf
-            ctx.beginPath();
-            ctx.moveTo(0, 0);
-            ctx.bezierCurveTo(size * 0.2, -size * 0.35, size * 0.7, -size * 0.4, size, 0);
-            ctx.bezierCurveTo(size * 0.7, size * 0.4, size * 0.2, size * 0.35, 0, 0);
-            ctx.closePath();
-            ctx.fill();
-
-            // Draw cleft cut lines
-            ctx.strokeStyle = isDark ? '#111' : '#fff';
-            ctx.lineWidth = size * 0.035;
-            ctx.globalAlpha = 1.0;
-            const numClefts = 3;
-            for (let i = 1; i <= numClefts; i++) {
-                const cx = size * (i / (numClefts + 1)) * 0.9;
-                const clen = size * 0.25 * (1.1 - cx / size);
+            for (let v = 1; v <= 6; v++) {
+                const vx = size * (v / 7);
+                const vy = size * 0.12 * Math.sin((v / 7) * Math.PI);
                 [-1, 1].forEach(d => {
-                    ctx.beginPath();
-                    ctx.moveTo(cx, d * size * 0.05);
-                    ctx.lineTo(cx + size * 0.1, d * (size * 0.05 + clen));
+                    ctx.beginPath(); ctx.moveTo(vx, 0);
+                    ctx.quadraticCurveTo(vx + size * 0.04, d * vy * 0.5, vx + size * 0.07, d * vy);
                     ctx.stroke();
                 });
             }
             break;
 
-        case 4: // Willow Slender (Drapey, extra narrow)
+        case 1: // Lotus (Shield/Peltate round leaf)
             ctx.beginPath();
-            ctx.moveTo(0, 0);
-            ctx.bezierCurveTo(size * 0.4, -size * 0.07, size * 0.85, -size * 0.04, size * 1.3, 0);
-            ctx.bezierCurveTo(size * 0.85, size * 0.04, size * 0.4, size * 0.07, 0, 0);
-            ctx.closePath();
+            ctx.arc(size * 0.35, 0, size * 0.42, 0, Math.PI * 2);
             ctx.fill();
-            break;
-
-        case 5: // Ivy Lobed Leaf (3-5 points)
-            ctx.beginPath();
-            ctx.moveTo(0, 0);
-            ctx.lineTo(size * 0.35, -size * 0.28);
-            ctx.lineTo(size * 0.45, -size * 0.18);
-            ctx.lineTo(size * 0.95, 0); // Main tip
-            ctx.lineTo(size * 0.45, size * 0.18);
-            ctx.lineTo(size * 0.35, size * 0.28);
-            ctx.closePath();
-            ctx.fill();
-            break;
-
-        case 6: // Shield / Peltate Round Leaf
-            ctx.beginPath();
-            ctx.arc(size * 0.4, 0, size * 0.45, 0, Math.PI * 2);
-            ctx.fill();
-            // Radiating veins
-            ctx.lineWidth = size * 0.008;
             ctx.globalAlpha = isDark ? 0.35 : 0.45;
+            ctx.lineWidth = size * 0.008;
             for (let a = 0; a < 8; a++) {
                 const rad = (a / 8) * Math.PI * 2;
                 ctx.beginPath();
-                ctx.moveTo(size * 0.4, 0);
-                ctx.lineTo(size * 0.4 + Math.cos(rad) * size * 0.4, Math.sin(rad) * size * 0.4);
+                ctx.moveTo(size * 0.35, 0);
+                ctx.lineTo(size * 0.35 + Math.cos(rad) * size * 0.38, Math.sin(rad) * size * 0.38);
                 ctx.stroke();
             }
             break;
 
-        case 7: // Oak Sinuous Lobed Leaf
+        case 2: // Peony (Multi-lobed oak-like leaves)
             ctx.beginPath();
             ctx.moveTo(0, 0);
             ctx.quadraticCurveTo(size * 0.15, -size * 0.25, size * 0.3, -size * 0.15);
@@ -308,12 +296,58 @@ function drawStyledLeaf(ctx, x, y, size, angle, color, isDark, styleIndex, rng) 
             ctx.fill();
             break;
 
-        case 8: // Pine Needles (Fine burst of needles)
-            ctx.lineWidth = size * 0.007;
-            ctx.globalAlpha = isDark ? 0.35 : 0.5;
-            const numNeedles = 6;
-            for (let i = 0; i < numNeedles; i++) {
-                const nAngle = -0.5 + (i / numNeedles) * 1.0;
+        case 3: // Orchid (Broad thick elliptic)
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.bezierCurveTo(size * 0.25, -size * 0.18, size * 0.75, -size * 0.18, size, 0);
+            ctx.bezierCurveTo(size * 0.75, size * 0.18, size * 0.25, size * 0.18, 0, 0);
+            ctx.closePath();
+            ctx.fill();
+            break;
+
+        case 4: // Magnolia (Large leathery ovate)
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.bezierCurveTo(size * 0.3, -size * 0.22, size * 0.7, -size * 0.22, size, 0);
+            ctx.bezierCurveTo(size * 0.7, size * 0.22, size * 0.3, size * 0.22, 0, 0);
+            ctx.closePath();
+            ctx.fill();
+            break;
+
+        case 5: // Sakura (Serrated small leaves)
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            for (let t = 0; t <= 10; t++) {
+                const lt = t / 10;
+                const lx = size * lt;
+                const ly = -size * 0.15 * Math.sin(lt * Math.PI) + (Math.sin(lt * Math.PI * 5) * size * 0.015);
+                ctx.lineTo(lx, ly);
+            }
+            for (let t = 10; t >= 0; t--) {
+                const lt = t / 10;
+                const lx = size * lt;
+                const ly = size * 0.15 * Math.sin(lt * Math.PI) - (Math.sin(lt * Math.PI * 5) * size * 0.015);
+                ctx.lineTo(lx, ly);
+            }
+            ctx.closePath();
+            ctx.fill();
+            break;
+
+        case 6: // Tulip (Upright grass blade)
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.bezierCurveTo(size * 0.4, -size * 0.08, size * 0.9, -size * 0.04, size * 1.3, 0);
+            ctx.bezierCurveTo(size * 0.9, size * 0.04, size * 0.4, size * 0.08, 0, 0);
+            ctx.closePath();
+            ctx.fill();
+            break;
+
+        case 7: // Daisy (Fine feathery leaves)
+            ctx.lineWidth = size * 0.01;
+            ctx.globalAlpha = isDark ? 0.35 : 0.45;
+            const lines = 6;
+            for (let i = 0; i < lines; i++) {
+                const nAngle = -0.4 + (i / lines) * 0.8;
                 ctx.beginPath();
                 ctx.moveTo(0, 0);
                 ctx.quadraticCurveTo(size * 0.5 * Math.cos(nAngle), size * 0.5 * Math.sin(nAngle), size * Math.cos(nAngle), size * Math.sin(nAngle));
@@ -321,367 +355,148 @@ function drawStyledLeaf(ctx, x, y, size, angle, color, isDark, styleIndex, rng) 
             }
             break;
 
-        case 9: // Clover Trefoil (Heart shapes clustered)
-            [-0.5, 0, 0.5].forEach(rot => {
+        case 8: // Ginkgo Fan Leaf
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.bezierCurveTo(size * 0.2, -size * 0.4, size * 0.7, -size * 0.6, size, -size * 0.15);
+            ctx.quadraticCurveTo(size * 0.82, 0, size, size * 0.15);
+            ctx.bezierCurveTo(size * 0.7, size * 0.6, size * 0.2, size * 0.4, 0, 0);
+            ctx.closePath();
+            ctx.fill();
+            break;
+
+        case 9: // Hibiscus (Cordate heart leaf)
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.bezierCurveTo(size * 0.15, -size * 0.28, size * 0.6, -size * 0.3, size, 0);
+            ctx.bezierCurveTo(size * 0.6, size * 0.3, size * 0.15, size * 0.28, 0, 0);
+            ctx.closePath();
+            ctx.fill();
+            break;
+
+        case 10: // Fern pinnate leaf
+            ctx.lineWidth = size * 0.015;
+            ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(size, 0); ctx.stroke();
+            const leaflets = 6;
+            for (let v = 0; v < leaflets; v++) {
+                const lx = size * (v / leaflets) * 0.85 + size * 0.1;
+                const lSize = size * 0.23 * (1.05 - (v / leaflets));
+                [-1, 1].forEach(d => {
+                    ctx.save();
+                    ctx.translate(lx, 0); ctx.rotate(d * (Math.PI / 3));
+                    ctx.beginPath(); ctx.ellipse(lSize, 0, lSize, lSize * 0.35, 0, 0, Math.PI * 2); ctx.fill();
+                    ctx.restore();
+                });
+            }
+            break;
+
+        case 11: // Clematis (3 pointed lobes vine)
+            [-0.35, 0, 0.35].forEach(rot => {
                 ctx.save();
                 ctx.rotate(rot);
                 ctx.beginPath();
                 ctx.moveTo(0, 0);
-                ctx.bezierCurveTo(size * 0.2, -size * 0.3, size * 0.6, -size * 0.2, size * 0.5, 0);
-                ctx.bezierCurveTo(size * 0.6, size * 0.2, size * 0.2, size * 0.3, 0, 0);
+                ctx.bezierCurveTo(size * 0.3, -size * 0.15, size * 0.7, -size * 0.1, size * 0.8, 0);
+                ctx.bezierCurveTo(size * 0.7, size * 0.1, size * 0.3, size * 0.15, 0, 0);
                 ctx.closePath();
                 ctx.fill();
                 ctx.restore();
             });
             break;
-
-        case 10: // Wavy/Undulate margins
-            ctx.beginPath();
-            ctx.moveTo(0, 0);
-            for (let t = 0; t <= 10; t++) {
-                const lt = t / 10;
-                const lx = size * lt;
-                const ly = -size * 0.15 * Math.sin(lt * Math.PI) + (Math.sin(lt * Math.PI * 4) * size * 0.02);
-                ctx.lineTo(lx, ly);
-            }
-            for (let t = 10; t >= 0; t--) {
-                const lt = t / 10;
-                const lx = size * lt;
-                const ly = size * 0.15 * Math.sin(lt * Math.PI) - (Math.sin(lt * Math.PI * 4) * size * 0.02);
-                ctx.lineTo(lx, ly);
-            }
-            ctx.closePath();
-            ctx.fill();
-            break;
-
-        case 11: // Faceted Prism Leaf (Origami look)
-            ctx.beginPath();
-            ctx.moveTo(0, 0);
-            ctx.lineTo(size * 0.4, -size * 0.15);
-            ctx.lineTo(size, 0);
-            ctx.lineTo(size * 0.4, size * 0.15);
-            ctx.closePath();
-            ctx.fill();
-
-            // Facet line drawing
-            ctx.globalAlpha = isDark ? 0.4 : 0.5;
-            ctx.lineWidth = size * 0.009;
-            ctx.beginPath();
-            ctx.moveTo(0, 0);
-            ctx.lineTo(size, 0);
-            ctx.moveTo(size * 0.4, -size * 0.15);
-            ctx.lineTo(size * 0.4, size * 0.15);
-            ctx.stroke();
-            break;
     }
 
     ctx.restore();
 }
 
-// ==========================================
-// 12 DISTINCT STEM STYLES
-// ==========================================
-function drawStyledStem(ctx, x1, y1, x4, y4, x2, y2, x3, y3, color, baseWidth, styleIndex, rng) {
-    ctx.save();
-    ctx.strokeStyle = color;
-    ctx.fillStyle = color;
+// ---- DRAW FLOWER HEAD PETALS ----
+function drawFlowerHead(ctx, flower, isDark, rng, speciesIndex) {
+    const { x, y, r, color, secondaryColor, petals, angleOffset } = flower;
 
-    switch (styleIndex) {
-        case 0: // Sinuous Glow (Smooth basic bezier)
-        default:
-            ctx.beginPath();
-            ctx.moveTo(x1, y1);
-            ctx.bezierCurveTo(x2, y2, x3, y3, x4, y4);
-            ctx.lineWidth = baseWidth;
-            ctx.stroke();
-            break;
+    // Draw 3 layers of translucent petals
+    const layers = [
+        { scale: 1.0, opacity: isDark ? 0.15 : 0.24, rotOffset: 0, col: color },
+        { scale: 0.82, opacity: isDark ? 0.18 : 0.28, rotOffset: Math.PI / petals, col: secondaryColor },
+        { scale: 0.65, opacity: isDark ? 0.22 : 0.32, rotOffset: -Math.PI / (petals * 2), col: color }
+    ];
 
-        case 1: // Hollow Double (Two thin parallel lines)
-            [-1.5, 1.5].forEach(offset => {
-                ctx.beginPath();
-                ctx.moveTo(x1 + offset, y1);
-                ctx.bezierCurveTo(x2 + offset, y2, x3 + offset, y3, x4, y4);
-                ctx.lineWidth = baseWidth * 0.35;
-                ctx.stroke();
-            });
-            break;
-
-        case 2: // Bamboo Node (Segmented with tiny bulb nodes)
-            ctx.beginPath();
-            ctx.moveTo(x1, y1);
-            ctx.bezierCurveTo(x2, y2, x3, y3, x4, y4);
-            ctx.lineWidth = baseWidth * 0.85;
-            ctx.stroke();
-
-            const nodeCount = 5;
-            for (let i = 1; i < nodeCount; i++) {
-                const t = i / nodeCount;
-                const pt = getBezierPoint(t, x1, y1, x2, y2, x3, y3, x4, y4);
-                ctx.beginPath();
-                ctx.ellipse(pt.x, pt.y, baseWidth * 2.0, baseWidth * 0.9, Math.atan2(y4-y1, x4-x1), 0, Math.PI * 2);
-                ctx.fill();
-            }
-            break;
-
-        case 3: // Thorny Vine (Fine lines with triangular thorn extensions)
-            ctx.beginPath();
-            ctx.moveTo(x1, y1);
-            ctx.bezierCurveTo(x2, y2, x3, y3, x4, y4);
-            ctx.lineWidth = baseWidth * 0.75;
-            ctx.stroke();
-
-            const thorns = 6;
-            for (let i = 1; i <= thorns; i++) {
-                const t = (i / (thorns + 1)) * 0.8 + 0.15;
-                const pt = getBezierPoint(t, x1, y1, x2, y2, x3, y3, x4, y4);
-                const tangent = getBezierTangent(t, x1, y1, x2, y2, x3, y3, x4, y4);
-                const angle = Math.atan2(tangent.y, tangent.x) + ((i % 2 === 0 ? -1 : 1) * Math.PI / 2.3);
-
-                ctx.beginPath();
-                ctx.moveTo(pt.x, pt.y);
-                ctx.lineTo(pt.x + Math.cos(angle) * baseWidth * 3.5, pt.y + Math.sin(angle) * baseWidth * 3.5);
-                ctx.lineTo(pt.x + Math.cos(angle - 0.2) * baseWidth * 1.5, pt.y + Math.sin(angle - 0.2) * baseWidth * 1.5);
-                ctx.closePath();
-                ctx.fill();
-            }
-            break;
-
-        case 4: // Twisted Rope (Overlapping sinuous waves)
-            const steps = 60;
-            ctx.lineWidth = baseWidth * 0.4;
-            for (let dir = -1; dir <= 1; dir += 2) {
-                ctx.beginPath();
-                for (let s = 0; s <= steps; s++) {
-                    const t = s / steps;
-                    const pt = getBezierPoint(t, x1, y1, x2, y2, x3, y3, x4, y4);
-                    const tangent = getBezierTangent(t, x1, y1, x2, y2, x3, y3, x4, y4);
-                    const normalAngle = Math.atan2(tangent.y, tangent.x) + Math.PI / 2;
-                    const offset = Math.sin(t * Math.PI * 18 + (dir * Math.PI / 2)) * baseWidth * 1.2;
-
-                    const sx = pt.x + Math.cos(normalAngle) * offset;
-                    const sy = pt.y + Math.sin(normalAngle) * offset;
-                    if (s === 0) ctx.moveTo(sx, sy);
-                    else ctx.lineTo(sx, sy);
-                }
-                ctx.stroke();
-            }
-            break;
-
-        case 5: // Dotted Pearl (Chain of beads)
-            const beadCount = 35;
-            for (let i = 0; i <= beadCount; i++) {
-                const t = i / beadCount;
-                const pt = getBezierPoint(t, x1, y1, x2, y2, x3, y3, x4, y4);
-                ctx.beginPath();
-                ctx.arc(pt.x, pt.y, baseWidth * (1.1 + Math.sin(t * Math.PI) * 0.4), 0, Math.PI * 2);
-                ctx.fill();
-            }
-            break;
-
-        case 6: // Spiral Tendrils (Standard stem + curly tendrils branching out)
-            ctx.beginPath();
-            ctx.moveTo(x1, y1);
-            ctx.bezierCurveTo(x2, y2, x3, y3, x4, y4);
-            ctx.lineWidth = baseWidth * 0.8;
-            ctx.stroke();
-
-            const tendrilPoints = [0.3, 0.6];
-            tendrilPoints.forEach((t, idx) => {
-                const pt = getBezierPoint(t, x1, y1, x2, y2, x3, y3, x4, y4);
-                const tangent = getBezierTangent(t, x1, y1, x2, y2, x3, y3, x4, y4);
-                const dir = (idx % 2 === 0) ? -1 : 1;
-                const startAngle = Math.atan2(tangent.y, tangent.x) + dir * Math.PI / 2;
-
-                ctx.beginPath();
-                ctx.moveTo(pt.x, pt.y);
-                let cx = pt.x;
-                let cy = pt.y;
-                let cAngle = startAngle;
-                for (let r = 0; r < 20; r++) {
-                    const stepR = baseWidth * (0.8 + r * 0.15);
-                    cAngle += dir * 0.35;
-                    cx += Math.cos(cAngle) * stepR;
-                    cy += Math.sin(cAngle) * stepR;
-                    ctx.lineTo(cx, cy);
-                }
-                ctx.lineWidth = baseWidth * 0.25;
-                ctx.stroke();
-            });
-            break;
-
-        case 7: // Branching Network (Recursive micro twigs)
-            ctx.beginPath();
-            ctx.moveTo(x1, y1);
-            ctx.bezierCurveTo(x2, y2, x3, y3, x4, y4);
-            ctx.lineWidth = baseWidth;
-            ctx.stroke();
-
-            const twigT = [0.4, 0.7];
-            twigT.forEach((t, idx) => {
-                const pt = getBezierPoint(t, x1, y1, x2, y2, x3, y3, x4, y4);
-                const dir = (idx % 2 === 0) ? -1 : 1;
-                const tAngle = Math.atan2(y4 - y1, x4 - x1) + dir * (Math.PI / 4 + rng() * 0.2);
-                ctx.beginPath();
-                ctx.moveTo(pt.x, pt.y);
-                ctx.quadraticCurveTo(
-                    pt.x + Math.cos(tAngle) * baseWidth * 4,
-                    pt.y + Math.sin(tAngle) * baseWidth * 4,
-                    pt.x + Math.cos(tAngle + 0.15) * baseWidth * 8,
-                    pt.y + Math.sin(tAngle + 0.15) * baseWidth * 8
-                );
-                ctx.lineWidth = baseWidth * 0.4;
-                ctx.stroke();
-            });
-            break;
-
-        case 8: // Dashed Line (Stylized, sci-fi bloom look)
-            ctx.beginPath();
-            ctx.moveTo(x1, y1);
-            ctx.bezierCurveTo(x2, y2, x3, y3, x4, y4);
-            ctx.lineWidth = baseWidth;
-            ctx.setLineDash([baseWidth * 3, baseWidth * 2.5]);
-            ctx.stroke();
-            ctx.setLineDash([]); // clear
-            break;
-
-        case 9: // Ribbon Twist (Polygonal winding ribbon)
-            const ribbonSteps = 30;
-            ctx.beginPath();
-            for (let s = 0; s <= ribbonSteps; s++) {
-                const t = s / ribbonSteps;
-                const pt = getBezierPoint(t, x1, y1, x2, y2, x3, y3, x4, y4);
-                const tangent = getBezierTangent(t, x1, y1, x2, y2, x3, y3, x4, y4);
-                const normalAngle = Math.atan2(tangent.y, tangent.x) + Math.PI / 2;
-                const thickness = Math.sin(t * Math.PI * 6) * baseWidth * 1.5;
-
-                const sx = pt.x + Math.cos(normalAngle) * thickness;
-                const sy = pt.y + Math.sin(normalAngle) * thickness;
-                if (s === 0) ctx.moveTo(sx, sy);
-                else ctx.lineTo(sx, sy);
-            }
-            ctx.lineWidth = baseWidth * 0.4;
-            ctx.stroke();
-            break;
-
-        case 10: // Angular Segmented (Origami straight segments)
-            const pt1 = getBezierPoint(0.33, x1, y1, x2, y2, x3, y3, x4, y4);
-            const pt2 = getBezierPoint(0.66, x1, y1, x2, y2, x3, y3, x4, y4);
-            ctx.beginPath();
-            ctx.moveTo(x1, y1);
-            ctx.lineTo(pt1.x, pt1.y);
-            ctx.lineTo(pt2.x, pt2.y);
-            ctx.lineTo(x4, y4);
-            ctx.lineWidth = baseWidth;
-            ctx.stroke();
-            break;
-
-        case 11: // Fading segments (multiple layered lines)
-            for (let j = 0; j < 3; j++) {
-                ctx.beginPath();
-                ctx.moveTo(x1, y1);
-                ctx.bezierCurveTo(x2, y2, x3, y3, x4, y4);
-                ctx.lineWidth = baseWidth * (0.3 + j * 0.35);
-                ctx.globalAlpha = 0.25 + j * 0.25;
-                ctx.stroke();
-            }
-            break;
-    }
-
-    ctx.restore();
+    layers.forEach(layer => {
+        for (let i = 0; i < petals; i++) {
+            const angle = angleOffset + (i / petals) * Math.PI * 2 + layer.rotOffset;
+            const size = r * layer.scale;
+            drawSpeciesPetal(ctx, x, y, size, angle, layer.col, layer.opacity, speciesIndex, rng);
+        }
+    });
 }
 
-// ==========================================
-// 12 DISTINCT PETAL STYLES (Flower Head loop)
-// ==========================================
-function drawStyledPetal(ctx, cx, cy, r, angle, color, alpha, spreadFactor, styleIndex, rng) {
+// ---- DRAW SPECIES PETAL ----
+function drawSpeciesPetal(ctx, cx, cy, r, angle, color, alpha, speciesIndex, rng) {
     ctx.save();
     ctx.globalAlpha = alpha;
     ctx.fillStyle = color;
-    ctx.strokeStyle = color;
 
-    const spread = spreadFactor + rng() * 0.05;
+    const spread = 0.42 + rng() * 0.05;
     const leftAngle = angle - spread;
     const rightAngle = angle + spread;
-
-    const leftR = r * (0.95 + rng() * 0.1);
-    const rightR = r * (0.95 + rng() * 0.1);
 
     ctx.beginPath();
     ctx.moveTo(cx, cy);
 
-    switch (styleIndex) {
-        case 0: // Poppy Ruffled (Broad wavy margin with cleft)
+    switch (speciesIndex) {
+        case 0: // Poppy (Ruffled, clefted)
         default:
-            const centerR = r * (0.83 + rng() * 0.08);
+            const centerR = r * 0.85;
             ctx.bezierCurveTo(
                 cx + Math.cos(angle - spread * 0.8) * r * 0.45, cy + Math.sin(angle - spread * 0.8) * r * 0.45,
-                cx + Math.cos(leftAngle) * leftR * 0.8, cy + Math.sin(leftAngle) * leftR * 0.8,
-                cx + Math.cos(angle - spread * 0.35) * leftR * 1.02, cy + Math.sin(angle - spread * 0.35) * leftR * 1.02
+                cx + Math.cos(leftAngle) * r * 0.85, cy + Math.sin(leftAngle) * r * 0.85,
+                cx + Math.cos(angle - spread * 0.35) * r * 1.02, cy + Math.sin(angle - spread * 0.35) * r * 1.02
             );
             ctx.bezierCurveTo(
                 cx + Math.cos(angle - spread * 0.15) * centerR * 1.05, cy + Math.sin(angle - spread * 0.15) * centerR * 1.05,
                 cx + Math.cos(angle + spread * 0.15) * centerR * 1.05, cy + Math.sin(angle + spread * 0.15) * centerR * 1.05,
-                cx + Math.cos(angle + spread * 0.35) * rightR * 1.02, cy + Math.sin(angle + spread * 0.35) * rightR * 1.02
+                cx + Math.cos(angle + spread * 0.35) * r * 1.02, cy + Math.sin(angle + spread * 0.35) * r * 1.02
             );
             ctx.bezierCurveTo(
-                cx + Math.cos(rightAngle) * rightR * 0.8, cy + Math.sin(rightAngle) * rightR * 0.8,
+                cx + Math.cos(rightAngle) * r * 0.85, cy + Math.sin(rightAngle) * r * 0.85,
                 cx + Math.cos(angle + spread * 0.8) * r * 0.45, cy + Math.sin(angle + spread * 0.8) * r * 0.45,
                 cx, cy
             );
             break;
 
-        case 1: // Pointed Lily (Slender, sharp, lanceolate petals)
+        case 1: // Lotus / Water Lily (Sharp pointed)
+        case 11: // Clematis (Flat pointed)
             ctx.bezierCurveTo(
-                cx + Math.cos(angle - spread * 0.4) * r * 0.5, cy + Math.sin(angle - spread * 0.4) * r * 0.5,
+                cx + Math.cos(angle - spread * 0.45) * r * 0.5, cy + Math.sin(angle - spread * 0.45) * r * 0.5,
                 cx + Math.cos(angle - spread * 0.15) * r * 0.95, cy + Math.sin(angle - spread * 0.15) * r * 0.95,
                 cx + Math.cos(angle) * r * 1.1, cy + Math.sin(angle) * r * 1.1
             );
             ctx.bezierCurveTo(
                 cx + Math.cos(angle + spread * 0.15) * r * 0.95, cy + Math.sin(angle + spread * 0.15) * r * 0.95,
-                cx + Math.cos(angle + spread * 0.4) * r * 0.5, cy + Math.sin(angle + spread * 0.4) * r * 0.5,
+                cx + Math.cos(angle + spread * 0.45) * r * 0.5, cy + Math.sin(angle + spread * 0.45) * r * 0.5,
                 cx, cy
             );
             break;
 
-        case 2: // Saucer Round (Broad, smooth circles)
-            ctx.bezierCurveTo(
-                cx + Math.cos(leftAngle) * r * 0.6, cy + Math.sin(leftAngle) * r * 0.6,
-                cx + Math.cos(angle - spread * 0.5) * r * 1.0, cy + Math.sin(angle - spread * 0.5) * r * 1.0,
-                cx + Math.cos(angle) * r, cy + Math.sin(angle) * r
-            );
-            ctx.bezierCurveTo(
-                cx + Math.cos(angle + spread * 0.5) * r * 1.0, cy + Math.sin(angle + spread * 0.5) * r * 1.0,
-                cx + Math.cos(rightAngle) * r * 0.6, cy + Math.sin(rightAngle) * r * 0.6,
-                cx, cy
-            );
-            break;
-
-        case 3: // Fringed Carnation (Multiple tiny jagged cuts along top edge)
+        case 2: // Peony (Overlapping layered ruffle)
             ctx.bezierCurveTo(
                 cx + Math.cos(leftAngle) * r * 0.65, cy + Math.sin(leftAngle) * r * 0.65,
-                cx + Math.cos(angle - spread * 0.5) * r * 1.0, cy + Math.sin(angle - spread * 0.5) * r * 1.0,
-                cx + Math.cos(angle - spread * 0.2) * r * 0.95, cy + Math.sin(angle - spread * 0.2) * r * 0.95
+                cx + Math.cos(angle - spread * 0.5) * r * 1.02, cy + Math.sin(angle - spread * 0.5) * r * 1.02,
+                cx + Math.cos(angle - spread * 0.1) * r * 1.0, cy + Math.sin(angle - spread * 0.1) * r * 1.0
             );
-            // Jagged edge notches
-            for (let j = -2; j <= 2; j++) {
-                const jAngle = angle + (j / 5) * spread;
-                const jRadius = r * (0.95 + (j % 2 === 0 ? 0.05 : -0.05));
-                ctx.lineTo(cx + Math.cos(jAngle) * jRadius, cy + Math.sin(jAngle) * jRadius);
-            }
+            ctx.quadraticCurveTo(cx + Math.cos(angle) * r * 1.15, cy + Math.sin(angle) * r * 1.15, cx + Math.cos(angle + spread * 0.1) * r * 1.0, cy + Math.sin(angle + spread * 0.1) * r * 1.0);
             ctx.bezierCurveTo(
-                cx + Math.cos(angle + spread * 0.5) * r * 1.0, cy + Math.sin(angle + spread * 0.5) * r * 1.0,
+                cx + Math.cos(angle + spread * 0.5) * r * 1.02, cy + Math.sin(angle + spread * 0.5) * r * 1.02,
                 cx + Math.cos(rightAngle) * r * 0.65, cy + Math.sin(rightAngle) * r * 0.65,
                 cx, cy
             );
             break;
 
-        case 4: // Orchid Bilobed (Distinct split heart)
+        case 3: // Orchid (Broad bilobed asymmetric)
             ctx.bezierCurveTo(
                 cx + Math.cos(leftAngle) * r * 0.7, cy + Math.sin(leftAngle) * r * 0.7,
                 cx + Math.cos(angle - spread * 0.3) * r * 1.15, cy + Math.sin(angle - spread * 0.3) * r * 1.15,
                 cx + Math.cos(angle - spread * 0.08) * r * 0.95, cy + Math.sin(angle - spread * 0.08) * r * 0.95
             );
-            ctx.lineTo(cx + Math.cos(angle) * r * 0.6, cy + Math.sin(angle) * r * 0.6); // deep center notch
+            ctx.lineTo(cx + Math.cos(angle) * r * 0.65, cy + Math.sin(angle) * r * 0.65);
             ctx.lineTo(cx + Math.cos(angle + spread * 0.08) * r * 0.95, cy + Math.sin(angle + spread * 0.08) * r * 0.95);
             ctx.bezierCurveTo(
                 cx + Math.cos(angle + spread * 0.3) * r * 1.15, cy + Math.sin(angle + spread * 0.3) * r * 1.15,
@@ -690,30 +505,62 @@ function drawStyledPetal(ctx, cx, cy, r, angle, color, alpha, spreadFactor, styl
             );
             break;
 
-        case 5: // Rose Layered (Curling outer edge flaps)
+        case 4: // Magnolia (Thick broad cup)
+            ctx.bezierCurveTo(
+                cx + Math.cos(leftAngle) * r * 0.55, cy + Math.sin(leftAngle) * r * 0.55,
+                cx + Math.cos(angle - spread * 0.45) * r * 0.95, cy + Math.sin(angle - spread * 0.45) * r * 0.95,
+                cx + Math.cos(angle) * r * 1.0, cy + Math.sin(angle) * r * 1.0
+            );
+            ctx.bezierCurveTo(
+                cx + Math.cos(angle + spread * 0.45) * r * 0.95, cy + Math.sin(angle + spread * 0.45) * r * 0.95,
+                cx + Math.cos(rightAngle) * r * 0.55, cy + Math.sin(rightAngle) * r * 0.55,
+                cx, cy
+            );
+            break;
+
+        case 5: // Sakura (Small notched blossom)
+            const notchR = r * 0.88;
             ctx.bezierCurveTo(
                 cx + Math.cos(leftAngle) * r * 0.6, cy + Math.sin(leftAngle) * r * 0.6,
-                cx + Math.cos(angle - spread * 0.45) * r * 1.05, cy + Math.sin(angle - spread * 0.45) * r * 1.05,
+                cx + Math.cos(angle - spread * 0.4) * r * 1.05, cy + Math.sin(angle - spread * 0.4) * r * 1.05,
                 cx + Math.cos(angle - spread * 0.1) * r * 1.0, cy + Math.sin(angle - spread * 0.1) * r * 1.0
             );
-            ctx.quadraticCurveTo(cx + Math.cos(angle) * r * 1.15, cy + Math.sin(angle) * r * 1.15, cx + Math.cos(angle + spread * 0.1) * r * 1.0, cy + Math.sin(angle + spread * 0.1) * r * 1.0);
+            ctx.lineTo(cx + Math.cos(angle) * notchR, cy + Math.sin(angle) * notchR);
+            ctx.lineTo(cx + Math.cos(angle + spread * 0.1) * r * 1.0, cy + Math.sin(angle + spread * 0.1) * r * 1.0);
             ctx.bezierCurveTo(
-                cx + Math.cos(angle + spread * 0.45) * r * 1.05, cy + Math.sin(angle + spread * 0.45) * r * 1.05,
+                cx + Math.cos(angle + spread * 0.4) * r * 1.05, cy + Math.sin(angle + spread * 0.4) * r * 1.05,
                 cx + Math.cos(rightAngle) * r * 0.6, cy + Math.sin(rightAngle) * r * 0.6,
                 cx, cy
             );
             break;
 
-        case 6: // Starburst Geometric (Sharp double spikes)
-            ctx.lineTo(cx + Math.cos(angle - spread * 0.4) * r * 0.9, cy + Math.sin(angle - spread * 0.4) * r * 0.9);
-            ctx.lineTo(cx + Math.cos(angle - spread * 0.2) * r * 0.65, cy + Math.sin(angle - spread * 0.2) * r * 0.65);
-            ctx.lineTo(cx + Math.cos(angle) * r * 1.2, cy + Math.sin(angle) * r * 1.2);
-            ctx.lineTo(cx + Math.cos(angle + spread * 0.2) * r * 0.65, cy + Math.sin(angle + spread * 0.2) * r * 0.65);
-            ctx.lineTo(cx + Math.cos(angle + spread * 0.4) * r * 0.9, cy + Math.sin(angle + spread * 0.4) * r * 0.9);
-            ctx.closePath();
+        case 6: // Tulip (Upright petals)
+            ctx.bezierCurveTo(
+                cx + Math.cos(angle - spread * 0.5) * r * 0.5, cy + Math.sin(angle - spread * 0.5) * r * 0.5,
+                cx + Math.cos(angle - spread * 0.15) * r * 0.85, cy + Math.sin(angle - spread * 0.15) * r * 1.25,
+                cx + Math.cos(angle) * r * 1.08, cy + Math.sin(angle) * r * 1.08
+            );
+            ctx.bezierCurveTo(
+                cx + Math.cos(angle + spread * 0.15) * r * 0.85, cy + Math.sin(angle + spread * 0.15) * r * 1.25,
+                cx + Math.cos(angle + spread * 0.5) * r * 0.5, cy + Math.sin(angle + spread * 0.5) * r * 0.5,
+                cx, cy
+            );
             break;
 
-        case 7: // Ginkgo Fan Petal
+        case 7: // Daisy (Narrow radiating petals)
+            ctx.bezierCurveTo(
+                cx + Math.cos(angle - spread * 0.25) * r * 0.4, cy + Math.sin(angle - spread * 0.25) * r * 0.4,
+                cx + Math.cos(angle - spread * 0.08) * r * 0.95, cy + Math.sin(angle - spread * 0.08) * r * 0.95,
+                cx + Math.cos(angle) * r, cy + Math.sin(angle) * r
+            );
+            ctx.bezierCurveTo(
+                cx + Math.cos(angle + spread * 0.08) * r * 0.95, cy + Math.sin(angle + spread * 0.08) * r * 0.95,
+                cx + Math.cos(angle + spread * 0.25) * r * 0.4, cy + Math.sin(angle + spread * 0.25) * r * 0.4,
+                cx, cy
+            );
+            break;
+
+        case 8: // Ginkgo Fan shape
             ctx.bezierCurveTo(
                 cx + Math.cos(leftAngle) * r * 0.4, cy + Math.sin(leftAngle) * r * 0.4,
                 cx + Math.cos(angle - spread * 0.6) * r * 1.15, cy + Math.sin(angle - spread * 0.6) * r * 1.15,
@@ -727,100 +574,131 @@ function drawStyledPetal(ctx, cx, cy, r, angle, color, alpha, spreadFactor, styl
             );
             break;
 
-        case 8: // Feathery Plume (Drawn with many fine sub-arcs)
-            ctx.lineWidth = r * 0.02;
-            ctx.beginPath();
-            ctx.moveTo(cx, cy);
-            ctx.lineTo(cx + Math.cos(angle) * r, cy + Math.sin(angle) * r);
-            ctx.stroke();
-
-            const plumeHairs = 12;
-            ctx.lineWidth = r * 0.007;
-            for (let k = 1; k < plumeHairs; k++) {
-                const px = cx + Math.cos(angle) * r * (k / plumeHairs) * 0.9;
-                const py = cy + Math.sin(angle) * r * (k / plumeHairs) * 0.9;
-                const hLen = r * 0.3 * Math.sin((k / plumeHairs) * Math.PI);
-                [-1, 1].forEach(d => {
-                    ctx.beginPath();
-                    ctx.moveTo(px, py);
-                    ctx.lineTo(px + Math.cos(angle + d * (spread * 0.8)) * hLen, py + Math.sin(angle + d * (spread * 0.8)) * hLen);
-                    ctx.stroke();
-                });
-            }
-            break;
-
-        case 9: // Ribbon Wave (Long wavy curls)
-            const ribbonSteps = 15;
-            ctx.beginPath();
-            ctx.moveTo(cx, cy);
-            for (let s = 1; s <= ribbonSteps; s++) {
-                const t = s / ribbonSteps;
-                const wAngle = angle + Math.sin(t * Math.PI * 3.5) * spread * 0.35;
-                const rx = cx + Math.cos(wAngle) * r * t;
-                const ry = cy + Math.sin(wAngle) * r * t;
-                ctx.lineTo(rx, ry);
-            }
-            ctx.lineTo(cx + Math.cos(angle) * r * 0.7, cy + Math.sin(angle) * r * 0.7);
-            ctx.closePath();
-            ctx.fill();
-            break;
-
-        case 10: // Drooping Bell (Downward curving petals)
+        case 9: // Hibiscus / Mallow (Broad overlapping flared)
             ctx.bezierCurveTo(
-                cx + Math.cos(angle - spread * 0.6) * r * 0.5, cy + Math.sin(angle - spread * 0.6) * r * 0.5,
-                cx + Math.cos(angle - spread * 0.1) * r * 0.8, cy + Math.sin(angle - spread * 0.1) * r * 1.3,
-                cx + Math.cos(angle) * r * 1.1, cy + Math.sin(angle) * r * 1.1
+                cx + Math.cos(leftAngle) * r * 0.55, cy + Math.sin(leftAngle) * r * 0.55,
+                cx + Math.cos(angle - spread * 0.5) * r * 1.1, cy + Math.sin(angle - spread * 0.5) * r * 1.1,
+                cx + Math.cos(angle - spread * 0.15) * r * 1.02, cy + Math.sin(angle - spread * 0.15) * r * 1.02
             );
             ctx.bezierCurveTo(
-                cx + Math.cos(angle + spread * 0.1) * r * 0.8, cy + Math.sin(angle + spread * 0.1) * r * 1.3,
-                cx + Math.cos(angle + spread * 0.6) * r * 0.5, cy + Math.sin(angle + spread * 0.6) * r * 0.5,
+                cx + Math.cos(angle + spread * 0.15) * r * 1.02, cy + Math.sin(angle + spread * 0.15) * r * 1.02,
+                cx + Math.cos(angle + spread * 0.5) * r * 1.1, cy + Math.sin(angle + spread * 0.5) * r * 1.1,
+                cx + Math.cos(rightAngle) * r * 0.55, cy + Math.sin(rightAngle) * r * 0.55,
                 cx, cy
             );
             break;
 
-        case 11: // Serrated Teeth margins
+        case 10: // Star Jasmine (slender starry petals)
             ctx.bezierCurveTo(
-                cx + Math.cos(leftAngle) * r * 0.6, cy + Math.sin(leftAngle) * r * 0.6,
-                cx + Math.cos(angle - spread * 0.55) * r * 0.95, cy + Math.sin(angle - spread * 0.55) * r * 0.95,
-                cx + Math.cos(angle - spread * 0.25) * r * 0.95, cy + Math.sin(angle - spread * 0.25) * r * 0.95
+                cx + Math.cos(angle - spread * 0.35) * r * 0.4, cy + Math.sin(angle - spread * 0.35) * r * 0.4,
+                cx + Math.cos(angle - spread * 0.12) * r * 0.95, cy + Math.sin(angle - spread * 0.12) * r * 0.95,
+                cx + Math.cos(angle) * r * 1.05, cy + Math.sin(angle) * r * 1.05
             );
-            for (let j = 0; j < 5; j++) {
-                const sAngle = angle - spread * 0.2 + (j / 5) * (spread * 0.4);
-                const sR = r * (0.95 - (j % 2) * 0.04);
-                ctx.lineTo(cx + Math.cos(sAngle) * sR, cy + Math.sin(sAngle) * sR);
-            }
             ctx.bezierCurveTo(
-                cx + Math.cos(angle + spread * 0.55) * r * 0.95, cy + Math.sin(angle + spread * 0.55) * r * 0.95,
-                cx + Math.cos(rightAngle) * r * 0.6, cy + Math.sin(rightAngle) * r * 0.6,
+                cx + Math.cos(angle + spread * 0.12) * r * 0.95, cy + Math.sin(angle + spread * 0.12) * r * 0.95,
+                cx + Math.cos(angle + spread * 0.35) * r * 0.4, cy + Math.sin(angle + spread * 0.35) * r * 0.4,
                 cx, cy
             );
             break;
     }
 
-    if (styleIndex !== 8) { // Skip fill for Plume style which is stroke-only
-        ctx.fill();
-    }
+    ctx.fill();
     ctx.restore();
 }
 
-function drawFlowerHead(ctx, flower, isDark, rng, allColors, petalStyle) {
-    const { x, y, r, color, secondaryColor, petals, angleOffset } = flower;
+// ---- FINE VEIN LINES ----
+function drawVeins(ctx, f, rng, scale, isDark, speciesIndex) {
+    const { x, y, r, color, petals, angleOffset } = f;
 
-    const layers = [
-        { scale: 1.0, opacity: isDark ? 0.14 : 0.24, rotOffset: 0, col: color },
-        { scale: 0.82, opacity: isDark ? 0.18 : 0.28, rotOffset: Math.PI / petals, col: secondaryColor }
-    ];
+    ctx.globalAlpha = isDark ? 0.65 : 0.45;
+    ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.9)';
+    ctx.lineWidth = r * 0.007;
 
-    layers.forEach(layer => {
-        for (let i = 0; i < petals; i++) {
-            const angle = angleOffset + (i / petals) * Math.PI * 2 + layer.rotOffset;
-            const size = r * layer.scale;
-            drawStyledPetal(ctx, x, y, size, angle, layer.col, layer.opacity, 0.42, petalStyle, rng);
+    for (let i = 0; i < petals; i++) {
+        const angle = angleOffset + (i / petals) * Math.PI * 2;
+        const spread = 0.42 + rng() * 0.08;
+        const tipX = x + Math.cos(angle) * r * 0.88;
+        const tipY = y + Math.sin(angle) * r * 0.88;
+
+        // Center vein line
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.quadraticCurveTo(
+            x + Math.cos(angle) * r * 0.45,
+            y + Math.sin(angle) * r * 0.45,
+            tipX, tipY
+        );
+        ctx.stroke();
+
+        // 3 side veins branching out
+        const numSide = 3;
+        ctx.lineWidth = r * 0.0035;
+        ctx.globalAlpha = isDark ? 0.35 : 0.28;
+        for (let s = 1; s <= numSide; s++) {
+            const t = s / (numSide + 1);
+            const baseX = x + Math.cos(angle) * r * t * 0.85;
+            const baseY = y + Math.sin(angle) * r * t * 0.85;
+            const sideLen = r * 0.18 * (1 - t * 0.4);
+
+            [-1, 1].forEach(dir => {
+                const sAngle = angle + dir * (spread * 0.45 + rng() * 0.05);
+                ctx.beginPath();
+                ctx.moveTo(baseX, baseY);
+                ctx.lineTo(
+                    baseX + Math.cos(sAngle) * sideLen,
+                    baseY + Math.sin(sAngle) * sideLen
+                );
+                ctx.stroke();
+            });
         }
-    });
+    }
 }
 
-// Draw a closed/half-open flower bud
+// ---- GLOWING CENTER & STAMENS ----
+function drawCenter(ctx, f, rng, scale, isDark, speciesIndex) {
+    const { x, y, r, color2, color3, petals, angleOffset } = f;
+    const centerR = r * 0.13;
+
+    // Glowing core
+    const aura = ctx.createRadialGradient(x, y, 0, x, y, centerR * 2.5);
+    aura.addColorStop(0, hexWithAlpha(color2, isDark ? 0.95 : 0.75));
+    aura.addColorStop(0.4, hexWithAlpha(color2, isDark ? 0.4 : 0.25));
+    aura.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = aura;
+    ctx.beginPath();
+    ctx.arc(x, y, centerR * 2.5, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Natural stamens matching species (e.g. Hibiscus has extremely long stamens)
+    let lengthMult = 1.0;
+    if (speciesIndex === 9) lengthMult = 2.4; // Hibiscus long stamen column
+    
+    const numStamens = petals * 4;
+    ctx.strokeStyle = color3;
+    ctx.lineWidth = r * 0.007;
+
+    for (let i = 0; i < numStamens; i++) {
+        const angle = angleOffset + (i / numStamens) * Math.PI * 2;
+        const len = centerR * (0.95 + Math.sin(i * 2.5) * 0.25) * lengthMult;
+        const sx = x + Math.cos(angle) * len;
+        const sy = y + Math.sin(angle) * len;
+
+        ctx.globalAlpha = isDark ? 0.7 : 0.6;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(sx, sy);
+        ctx.stroke();
+
+        // Tip pollen dot
+        ctx.globalAlpha = isDark ? 0.95 : 0.85;
+        ctx.fillStyle = color2;
+        ctx.beginPath();
+        ctx.arc(sx, sy, r * 0.015, 0, Math.PI * 2);
+        ctx.fill();
+    }
+}
+
+// ---- CLOSED/HALF-OPEN BUD ----
 function drawBud(ctx, x, y, r, angle, color, sepalColor, isDark) {
     ctx.save();
     ctx.translate(x, y);
@@ -860,79 +738,31 @@ function drawBud(ctx, x, y, r, angle, color, sepalColor, isDark) {
     ctx.restore();
 }
 
-// 1D Bezier math helper to find position along cubic curve
-function getBezierPoint(t, x1, y1, x2, y2, x3, y3, x4, y4) {
-    const u = 1 - t;
-    const tt = t * t;
-    const uu = u * u;
-    const uuu = uu * u;
-    const ttt = tt * t;
+// ==========================================
+// BACKGROUND LAYER GENERATORS
+// ==========================================
 
-    return {
-        x: uuu * x1 + 3 * uu * t * x2 + 3 * u * tt * x3 + ttt * x4,
-        y: uuu * y1 + 3 * uu * t * y2 + 3 * u * tt * y3 + ttt * y4
-    };
+function drawSwirls(ctx, width, height, palette, rng, isDark, scale) {
+    ctx.globalCompositeOperation = isDark ? 'screen' : 'multiply';
+    const numSwirls = 6 + Math.floor(rng() * 4);
+    for (let i = 0; i < numSwirls; i++) {
+        const x = rng() * width;
+        const y = rng() * height;
+        const r = scale * (0.35 + rng() * 0.45);
+        const color = palette[Math.floor(rng() * palette.length)];
+
+        const grad = ctx.createRadialGradient(x, y, 0, x, y, r);
+        grad.addColorStop(0, hexWithAlpha(color, isDark ? 0.22 : 0.14));
+        grad.addColorStop(0.4, hexWithAlpha(color, isDark ? 0.08 : 0.05));
+        grad.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.ellipse(x, y, r * (0.6 + rng() * 0.8), r * (0.4 + rng() * 0.6), rng() * Math.PI, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.globalCompositeOperation = 'source-over';
 }
 
-// Get the derivative (tangent vector) of a cubic Bezier curve at t
-function getBezierTangent(t, x1, y1, x2, y2, x3, y3, x4, y4) {
-    const u = 1 - t;
-    const d1x = 3 * u * u * (x2 - x1);
-    const d1y = 3 * u * u * (y2 - y1);
-    const d2x = 6 * u * t * (x3 - x2);
-    const d2y = 6 * u * t * (y3 - y2);
-    const d3x = 3 * t * t * (x4 - x3);
-    const d3y = 3 * t * t * (y4 - y3);
-
-    return {
-        x: d1x + d2x + d3x,
-        y: d1y + d2y + d3y
-    };
-}
-
-// 1D Bezier math helper to find position along quadratic curve
-function getQuadraticPoint(t, x1, y1, x2, y2, x3, y3) {
-    const u = 1 - t;
-    return {
-        x: u * u * x1 + 2 * u * t * x2 + t * t * x3,
-        y: u * u * y1 + 2 * u * t * y2 + t * t * y3
-    };
-}
-
-// Determine if the background is dark to customize blend mode
-function isBgDark(hex) {
-    if (!hex || hex[0] !== '#') return true;
-    const r = parseInt(hex.slice(1, 3), 16);
-    const g = parseInt(hex.slice(3, 5), 16);
-    const b = parseInt(hex.slice(5, 7), 16);
-    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-    return luminance < 0.45;
-}
-
-// Utility to slightly adjust light/dark variations
-function adjustColorBrightness(hex, factor) {
-    if (!hex || hex[0] !== '#') return hex;
-    let r = parseInt(hex.slice(1, 3), 16);
-    let g = parseInt(hex.slice(3, 5), 16);
-    let b = parseInt(hex.slice(5, 7), 16);
-
-    r = Math.min(255, Math.floor(r * factor));
-    g = Math.min(255, Math.floor(g * factor));
-    b = Math.min(255, Math.floor(b * factor));
-
-    return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
-}
-
-// ---- MATH HELPERS FOR BG GLOWS ----
-function hexWithAlpha(hex, alpha) {
-    if (!hex || hex[0] !== '#') return `rgba(128,128,128,${alpha})`;
-    const r = parseInt(hex.slice(1,3),16);
-    const g = parseInt(hex.slice(3,5),16);
-    const b = parseInt(hex.slice(5,7),16);
-    return `rgba(${r},${g},${b},${alpha})`;
-}
-
-// ---- FLOWER PALETTE (extended to 6-8 colors) ----
 function buildFlowerPalette(colors, rng, isDark) {
     const base = colors.colors.slice();
     const h0 = extractHue(base[0]) || (rng() * 360);
@@ -952,6 +782,76 @@ function buildFlowerPalette(colors, rng, isDark) {
         return hslToHex(h, s, l);
     });
     return [...base, ...extended].slice(0, 8);
+}
+
+// ==========================================
+// PROCEDURAL MATH & BEZIER HELPERS
+// ==========================================
+
+function getBezierPoint(t, x1, y1, x2, y2, x3, y3, x4, y4) {
+    const u = 1 - t;
+    const tt = t * t;
+    const uu = u * u;
+    const uuu = uu * u;
+    const ttt = tt * t;
+
+    return {
+        x: uuu * x1 + 3 * uu * t * x2 + 3 * u * tt * x3 + ttt * x4,
+        y: uuu * y1 + 3 * uu * t * y2 + 3 * u * tt * y3 + ttt * y4
+    };
+}
+
+function getBezierTangent(t, x1, y1, x2, y2, x3, y3, x4, y4) {
+    const u = 1 - t;
+    const d1x = 3 * u * u * (x2 - x1);
+    const d1y = 3 * u * u * (y2 - y1);
+    const d2x = 6 * u * t * (x3 - x2);
+    const d2y = 6 * u * t * (y3 - y2);
+    const d3x = 3 * t * t * (x4 - x3);
+    const d3y = 3 * t * t * (y4 - y3);
+
+    return {
+        x: d1x + d2x + d3x,
+        y: d1y + d2y + d3y
+    };
+}
+
+function getQuadraticPoint(t, x1, y1, x2, y2, x3, y3) {
+    const u = 1 - t;
+    return {
+        x: u * u * x1 + 2 * u * t * x2 + t * t * x3,
+        y: u * u * y1 + 2 * u * t * y2 + t * t * y3
+    };
+}
+
+function isBgDark(hex) {
+    if (!hex || hex[0] !== '#') return true;
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+    return luminance < 0.45;
+}
+
+function adjustColorBrightness(hex, factor) {
+    if (!hex || hex[0] !== '#') return hex;
+    let r = parseInt(hex.slice(1, 3), 16);
+    let g = parseInt(hex.slice(3, 5), 16);
+    let b = parseInt(hex.slice(5, 7), 16);
+
+    r = Math.min(255, Math.floor(r * factor));
+    g = Math.min(255, Math.floor(g * factor));
+    b = Math.min(255, Math.floor(b * factor));
+
+    return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+}
+
+function hexWithAlpha(hex, alpha) {
+    if (!hex || hex[0] !== '#') return `rgba(128,128,128,${alpha})`;
+    const r = parseInt(hex.slice(1,3),16);
+    const g = parseInt(hex.slice(3,5),16);
+    const b = parseInt(hex.slice(5,7),16);
+    return `rgba(${r},${g},${b},${alpha})`;
 }
 
 function extractHue(hex) {
@@ -978,116 +878,4 @@ function hslToHex(h, s, l) {
         return Math.round(255 * c).toString(16).padStart(2, '0');
     };
     return `#${f(0)}${f(8)}${f(4)}`;
-}
-
-// ---- SWIRLING BG SHAPES ----
-function drawSwirls(ctx, width, height, palette, rng, isDark, scale) {
-    ctx.globalCompositeOperation = isDark ? 'screen' : 'multiply';
-    const numSwirls = 5 + Math.floor(rng() * 4);
-    for (let i = 0; i < numSwirls; i++) {
-        const x = rng() * width;
-        const y = rng() * height;
-        const r = scale * (0.25 + rng() * 0.5);
-        const color = palette[Math.floor(rng() * palette.length)];
-
-        const grad = ctx.createRadialGradient(x, y, 0, x, y, r);
-        grad.addColorStop(0, hexWithAlpha(color, isDark ? 0.2 : 0.12));
-        grad.addColorStop(0.4, hexWithAlpha(color, isDark ? 0.07 : 0.04));
-        grad.addColorStop(1, 'rgba(0,0,0,0)');
-        ctx.fillStyle = grad;
-        ctx.beginPath();
-        ctx.ellipse(x, y, r * (0.5 + rng() * 1.0), r * (0.3 + rng() * 0.7), rng() * Math.PI, 0, Math.PI * 2);
-        ctx.fill();
-    }
-    ctx.globalCompositeOperation = 'source-over';
-}
-
-// ---- FINE VEIN LINES ----
-function drawVeins(ctx, f, rng, scale, isDark) {
-    const { x, y, r, color, petals, angleOffset } = f;
-
-    ctx.globalAlpha = isDark ? 0.65 : 0.45;
-    ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.9)';
-    ctx.lineWidth = r * 0.008;
-
-    for (let i = 0; i < petals; i++) {
-        const angle = angleOffset + (i / petals) * Math.PI * 2;
-        const spread = 0.42 + rng() * 0.08;
-        const tipX = x + Math.cos(angle) * r * 0.92;
-        const tipY = y + Math.sin(angle) * r * 0.92;
-
-        ctx.beginPath();
-        ctx.moveTo(x, y);
-        ctx.quadraticCurveTo(
-            x + Math.cos(angle) * r * 0.45,
-            y + Math.sin(angle) * r * 0.45,
-            tipX, tipY
-        );
-        ctx.stroke();
-
-        const numSide = 4;
-        ctx.lineWidth = r * 0.004;
-        ctx.globalAlpha = isDark ? 0.4 : 0.3;
-        for (let s = 1; s <= numSide; s++) {
-            const t = s / (numSide + 1);
-            const baseX = x + Math.cos(angle) * r * t * 0.9;
-            const baseY = y + Math.sin(angle) * r * t * 0.9;
-            const sideLen = r * 0.18 * (1 - t * 0.5);
-
-            [-1, 1].forEach(dir => {
-                const sAngle = angle + dir * (spread * 0.5 + rng() * 0.1);
-                ctx.beginPath();
-                ctx.moveTo(baseX, baseY);
-                ctx.lineTo(
-                    baseX + Math.cos(sAngle) * sideLen,
-                    baseY + Math.sin(sAngle) * sideLen
-                );
-                ctx.stroke();
-            });
-        }
-    }
-}
-
-// ---- GLOWING CENTER ----
-function drawCenter(ctx, f, rng, scale, isDark) {
-    const { x, y, r, color2, color3, petals, angleOffset } = f;
-    const centerR = r * 0.13;
-
-    const aura = ctx.createRadialGradient(x, y, 0, x, y, centerR * 2.5);
-    aura.addColorStop(0, hexWithAlpha(color2, isDark ? 0.9 : 0.7));
-    aura.addColorStop(0.4, hexWithAlpha(color2, isDark ? 0.4 : 0.25));
-    aura.addColorStop(1, 'rgba(0,0,0,0)');
-    ctx.fillStyle = aura;
-    ctx.beginPath();
-    ctx.arc(x, y, centerR * 2.5, 0, Math.PI * 2);
-    ctx.fill();
-
-    const numStamens = petals * 4;
-    ctx.strokeStyle = color3;
-    ctx.lineWidth = r * 0.007;
-
-    for (let i = 0; i < numStamens; i++) {
-        const angle = angleOffset + (i / numStamens) * Math.PI * 2;
-        const len = centerR * (0.9 + Math.sin(i * 2.5) * 0.3);
-        const sx = x + Math.cos(angle) * len;
-        const sy = y + Math.sin(angle) * len;
-
-        ctx.globalAlpha = isDark ? 0.7 : 0.6;
-        ctx.beginPath();
-        ctx.moveTo(x, y);
-        ctx.lineTo(sx, sy);
-        ctx.stroke();
-
-        ctx.globalAlpha = isDark ? 0.95 : 0.85;
-        ctx.fillStyle = color2;
-        ctx.beginPath();
-        ctx.arc(sx, sy, r * 0.014, 0, Math.PI * 2);
-        ctx.fill();
-    }
-}
-
-// ---- BIG FLOWER (main draw layer) ----
-function drawBigFlower(ctx, f, isDark, rng, scale) {
-    const { x, y, r, color, color2, color3, petals, angleOffset } = f;
-    // Handled in drawFlowerHead for layers
 }
