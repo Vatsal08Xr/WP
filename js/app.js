@@ -120,12 +120,15 @@ function updateActiveUI() {
 }
 
 function updateHeartUI() {
-    const icon = btnSaveWallpaper.querySelector('svg') || btnSaveWallpaper.querySelector('i');
-    if (!icon) return;
+    // Target the <i> tag directly — Lucide replaces it with SVG so we need the SVG
+    const svgOrI = btnSaveWallpaper.querySelector('svg, i');
+    if (!svgOrI) return;
     if (store.isSaved(state)) {
-        icon.classList.add('fill-red-500', 'text-red-500');
+        svgOrI.classList.add('fill-red-500', 'stroke-red-500');
+        svgOrI.style.color = '#ef4444';
     } else {
-        icon.classList.remove('fill-red-500', 'text-red-500');
+        svgOrI.classList.remove('fill-red-500', 'stroke-red-500');
+        svgOrI.style.color = '';
     }
 }
 
@@ -186,6 +189,7 @@ themeBtns.forEach(btn => {
         state.themeName = btn.dataset.name;
         state.seed = Math.random().toString(36).substring(2, 15);
         updateActiveUI();
+        updateHeartUI();
         triggerUpdate();
     });
 });
@@ -194,6 +198,7 @@ paletteBtns.forEach(btn => {
     btn.addEventListener('click', () => {
         state.palette = btn.dataset.palette;
         updateActiveUI();
+        updateHeartUI();
         triggerUpdate();
     });
 });
@@ -259,23 +264,11 @@ btnLockPattern.addEventListener('click', () => {
 });
 
 btnSaveWallpaper.addEventListener('click', () => {
-    if (store.isSaved(state)) return; // Already saved
+    if (store.isSaved(state)) return; // Already saved — heart stays red
     store.save(state);
-    
-    updateHeartUI();
-    
-    // Quick visual feedback on the button
-    const icon = btnSaveWallpaper.querySelector('svg') || btnSaveWallpaper.querySelector('i');
-    const oldIcon = icon.getAttribute('data-lucide');
-    icon.setAttribute('data-lucide', 'check');
-    lucide.createIcons({ root: btnSaveWallpaper });
-    
-    setTimeout(() => {
-        icon.setAttribute('data-lucide', oldIcon);
-        lucide.createIcons({ root: btnSaveWallpaper });
-        updateHeartUI();
-    }, 1500);
+    updateHeartUI(); // Fill red immediately
 });
+
 
 function openSavedModal() {
     savedModal.classList.remove('hidden');
@@ -286,18 +279,20 @@ function openSavedModal() {
         savedModalContent.classList.add('opacity-100', 'scale-100');
     });
     renderSavedModal('saved-list-container', (item) => {
-        // Restore state
-        Object.assign(state, item);
+        // Deep copy the saved item into state, excluding the 'id' field
+        const { id, ...savedState } = item;
+        Object.assign(state, savedState);
         
         // Sync custom palette inputs
-        if(state.customPalette) {
+        if (state.palette === 'custom' && state.customPalette) {
             customBgColor.value = state.customPalette.bg;
             customAccentColors.forEach((input, i) => {
-                if(state.customPalette.colors[i]) input.value = state.customPalette.colors[i];
+                if (state.customPalette.colors[i]) input.value = state.customPalette.colors[i];
             });
         }
         
         updateActiveUI();
+        updateHeartUI();
         triggerUpdate();
         closeSavedModal();
     });
