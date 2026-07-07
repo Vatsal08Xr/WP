@@ -13,6 +13,8 @@ import { drawNebula } from './generators/nebula.js';
 import { drawGridGlitch } from './generators/gridGlitch.js';
 import { drawFlowField } from './generators/flowField.js';
 import { drawOrbitals } from './generators/orbitals.js';
+import { store, renderSavedModal } from './store.js';
+import { generateRandomPalette } from './colorUtils.js';
 
 const generators = {
     topography: drawTopography,
@@ -39,7 +41,8 @@ let state = {
     customPalette: {
         bg: '#18181b',
         colors: ['#3b82f6', '#8b5cf6', '#ec4899']
-    }
+    },
+    isLocked: false
 };
 
 const canvas = document.getElementById('preview-canvas');
@@ -57,6 +60,13 @@ const btnDlIphone = document.getElementById('btn-dl-iphone');
 
 const previewDesktopBtn = document.getElementById('preview-desktop-btn');
 const previewIphoneBtn = document.getElementById('preview-iphone-btn');
+const btnLockPattern = document.getElementById('btn-lock-pattern');
+const btnSaveWallpaper = document.getElementById('btn-save-wallpaper');
+const btnOpenSaved = document.getElementById('btn-open-saved');
+const btnCloseSaved = document.getElementById('btn-close-saved');
+const savedModal = document.getElementById('saved-modal');
+const savedModalBackdrop = document.getElementById('saved-modal-backdrop');
+const savedModalContent = document.getElementById('saved-modal-content');
 
 
 const customPaletteEditor = document.getElementById('custom-palette-editor');
@@ -105,6 +115,17 @@ function updateActiveUI() {
         previewDesktopBtn.classList.remove('bg-zinc-100', 'dark:bg-zinc-800');
 
         wrapper.style.borderRadius = '32px';
+    }
+    updateHeartUI();
+}
+
+function updateHeartUI() {
+    const icon = btnSaveWallpaper.querySelector('svg') || btnSaveWallpaper.querySelector('i');
+    if (!icon) return;
+    if (store.isSaved(state)) {
+        icon.classList.add('fill-red-500', 'text-red-500');
+    } else {
+        icon.classList.remove('fill-red-500', 'text-red-500');
     }
 }
 
@@ -179,12 +200,14 @@ paletteBtns.forEach(btn => {
 
 customBgColor.addEventListener('input', (e) => {
     state.customPalette.bg = e.target.value;
+    updateHeartUI();
     triggerUpdate();
 });
 
 customAccentColors.forEach((input, index) => {
     input.addEventListener('input', (e) => {
         state.customPalette.colors[index] = e.target.value;
+        updateHeartUI();
         triggerUpdate();
     });
 });
@@ -192,13 +215,106 @@ customAccentColors.forEach((input, index) => {
 themeToggle.addEventListener('click', () => {
     state.isDark = !state.isDark;
     document.documentElement.classList.toggle('dark', state.isDark);
+    updateHeartUI();
     triggerUpdate();
 });
 
 btnGenerate.addEventListener('click', () => {
-    state.seed = Math.random().toString(36).substring(2, 15);
+    if (state.isLocked) {
+        // Randomize colors using HSL generator instead of new pattern
+        const newColors = generateRandomPalette(state.isDark);
+        state.palette = 'custom';
+        state.customPalette = newColors;
+        customBgColor.value = newColors.bg;
+        customAccentColors.forEach((input, i) => input.value = newColors.colors[i]);
+        updateActiveUI();
+    } else {
+        // Generate entirely new pattern variation
+        state.seed = Math.random().toString(36).substring(2, 15);
+        updateHeartUI();
+    }
     triggerUpdate();
 });
+
+btnLockPattern.addEventListener('click', () => {
+    state.isLocked = !state.isLocked;
+    btnLockPattern.classList.add('scale-75', 'opacity-50');
+    
+    setTimeout(() => {
+        const icon = btnLockPattern.querySelector('svg') || btnLockPattern.querySelector('i');
+        if (state.isLocked) {
+            icon.setAttribute('data-lucide', 'lock');
+            btnLockPattern.classList.add('bg-zinc-900', 'text-white');
+            btnLockPattern.classList.remove('bg-white', 'text-black');
+            btnGenerate.innerHTML = '<i data-lucide="palette" class="w-4 h-4"></i> Generate Colors';
+        } else {
+            icon.setAttribute('data-lucide', 'unlock');
+            btnLockPattern.classList.remove('bg-zinc-900', 'text-white');
+            btnLockPattern.classList.add('bg-white', 'text-black');
+            btnGenerate.innerHTML = '<i data-lucide="shuffle" class="w-4 h-4"></i> Generate Variation';
+        }
+        lucide.createIcons({ root: btnLockPattern.parentElement });
+        btnLockPattern.classList.remove('scale-75', 'opacity-50');
+    }, 150);
+});
+
+btnSaveWallpaper.addEventListener('click', () => {
+    if (store.isSaved(state)) return; // Already saved
+    store.save(state);
+    
+    updateHeartUI();
+    
+    // Quick visual feedback on the button
+    const icon = btnSaveWallpaper.querySelector('svg') || btnSaveWallpaper.querySelector('i');
+    const oldIcon = icon.getAttribute('data-lucide');
+    icon.setAttribute('data-lucide', 'check');
+    lucide.createIcons({ root: btnSaveWallpaper });
+    
+    setTimeout(() => {
+        icon.setAttribute('data-lucide', oldIcon);
+        lucide.createIcons({ root: btnSaveWallpaper });
+        updateHeartUI();
+    }, 1500);
+});
+
+function openSavedModal() {
+    savedModal.classList.remove('hidden');
+    // small delay for transition
+    requestAnimationFrame(() => {
+        savedModalBackdrop.classList.remove('opacity-0');
+        savedModalContent.classList.remove('opacity-0', 'scale-95');
+        savedModalContent.classList.add('opacity-100', 'scale-100');
+    });
+    renderSavedModal('saved-list-container', (item) => {
+        // Restore state
+        Object.assign(state, item);
+        
+        // Sync custom palette inputs
+        if(state.customPalette) {
+            customBgColor.value = state.customPalette.bg;
+            customAccentColors.forEach((input, i) => {
+                if(state.customPalette.colors[i]) input.value = state.customPalette.colors[i];
+            });
+        }
+        
+        updateActiveUI();
+        triggerUpdate();
+        closeSavedModal();
+    });
+}
+
+function closeSavedModal() {
+    savedModalBackdrop.classList.add('opacity-0');
+    savedModalContent.classList.add('opacity-0', 'scale-95');
+    savedModalContent.classList.remove('opacity-100', 'scale-100');
+    setTimeout(() => {
+        savedModal.classList.add('hidden');
+    }, 200);
+}
+
+btnOpenSaved.addEventListener('click', openSavedModal);
+btnCloseSaved.addEventListener('click', closeSavedModal);
+savedModalBackdrop.addEventListener('click', closeSavedModal);
 
 previewDesktopBtn.addEventListener('click', () => {
     state.previewMode = 'desktop';
