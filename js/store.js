@@ -1,7 +1,18 @@
 export const store = {
     getSaved() {
         try {
-            return JSON.parse(localStorage.getItem('wallgen_saved')) || [];
+            const saved = JSON.parse(localStorage.getItem('wallgen_saved')) || [];
+            let migrated = false;
+            saved.forEach((item, idx) => {
+                if (!item.id) {
+                    item.id = `${Date.now()}-${idx}-${Math.random().toString(36).substring(2, 5)}`;
+                    migrated = true;
+                }
+            });
+            if (migrated) {
+                localStorage.setItem('wallgen_saved', JSON.stringify(saved));
+            }
+            return saved;
         } catch (e) {
             return [];
         }
@@ -22,15 +33,18 @@ export const store = {
         if (this.isSaved(wallpaperState)) return; // Prevent duplicates
         const saved = this.getSaved();
         saved.push({
-            id: Date.now().toString(),
+            id: `${Date.now()}-${Math.random().toString(36).substring(2, 5)}`,
             ...wallpaperState
         });
         localStorage.setItem('wallgen_saved', JSON.stringify(saved));
+        window.dispatchEvent(new CustomEvent('saved-wallpapers-changed'));
     },
     remove(id) {
         let saved = this.getSaved();
-        saved = saved.filter(item => item.id !== id);
+        // Compare strictly as string since dataset id attributes are strings
+        saved = saved.filter(item => String(item.id) !== String(id));
         localStorage.setItem('wallgen_saved', JSON.stringify(saved));
+        window.dispatchEvent(new CustomEvent('saved-wallpapers-changed'));
     }
 };
 

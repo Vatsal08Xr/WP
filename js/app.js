@@ -335,6 +335,7 @@ function init() {
     lucide.createIcons();
     updateActiveUI();
     triggerUpdate();
+    window.addEventListener('saved-wallpapers-changed', updateHeartUI);
 }
 
 if (document.readyState === 'complete' || document.readyState === 'interactive') {

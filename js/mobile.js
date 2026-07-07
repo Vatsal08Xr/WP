@@ -316,3 +316,5 @@ ro.observe(outer);
 // Also run immediately in case layout is already done
 updateUI();
 triggerUpdate();
+
+window.addEventListener('saved-wallpapers-changed', updateHeartUI);
