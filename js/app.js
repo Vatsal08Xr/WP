@@ -13,6 +13,7 @@ import { drawNebula } from './generators/nebula.js';
 import { drawGridGlitch } from './generators/gridGlitch.js';
 import { drawFlowField } from './generators/flowField.js';
 import { drawOrbitals } from './generators/orbitals.js';
+import { generate as drawShapes } from './generators/shapes.js';
 import { store, renderSavedModal } from './store.js';
 import { generateRandomPalette } from './colorUtils.js';
 
@@ -28,7 +29,8 @@ const generators = {
     nebula: drawNebula,
     gridGlitch: drawGridGlitch,
     flowField: drawFlowField,
-    orbitals: drawOrbitals
+    orbitals: drawOrbitals,
+    shapes: drawShapes
 };
 
 let state = {
@@ -45,7 +47,8 @@ let state = {
     isLocked: false,
     themeOptions: {
         particles: { num: 150 },
-        waveInterference: { num: 3, amp: 100, thick: 2 }
+        waveInterference: { num: 3, amp: 100, thick: 2 },
+        shapes: { squares: 20, triangles: 20, circles: 50, fill: false, connect: false }
     }
 };
 
@@ -57,7 +60,8 @@ try {
         if (parsed.themeOptions) {
             state.themeOptions = {
                 particles: { ...state.themeOptions.particles, ...parsed.themeOptions.particles },
-                waveInterference: { ...state.themeOptions.waveInterference, ...parsed.themeOptions.waveInterference }
+                waveInterference: { ...state.themeOptions.waveInterference, ...parsed.themeOptions.waveInterference },
+                shapes: { ...state.themeOptions.shapes, ...parsed.themeOptions.shapes }
             };
         }
     }
@@ -176,6 +180,28 @@ document.addEventListener('DOMContentLoaded', () => {
     updateOption('wave-num', 'wave-num-val', 'waveInterference', 'num');
     updateOption('wave-amp', 'wave-amp-val', 'waveInterference', 'amp');
     updateOption('wave-thick', 'wave-thick-val', 'waveInterference', 'thick', true);
+    
+    updateOption('shapes-squares', 'shapes-squares-val', 'shapes', 'squares');
+    updateOption('shapes-triangles', 'shapes-triangles-val', 'shapes', 'triangles');
+    updateOption('shapes-circles', 'shapes-circles-val', 'shapes', 'circles');
+
+    const shapesFillToggle = document.getElementById('shapes-fill');
+    if (shapesFillToggle) {
+        shapesFillToggle.checked = state.themeOptions.shapes.fill;
+        shapesFillToggle.addEventListener('change', (e) => {
+            state.themeOptions.shapes.fill = e.target.checked;
+            triggerUpdate();
+        });
+    }
+
+    const shapesConnectToggle = document.getElementById('shapes-connect');
+    if (shapesConnectToggle) {
+        shapesConnectToggle.checked = state.themeOptions.shapes.connect;
+        shapesConnectToggle.addEventListener('change', (e) => {
+            state.themeOptions.shapes.connect = e.target.checked;
+            triggerUpdate();
+        });
+    }
 
     // Reset buttons logic
     document.querySelectorAll('.reset-btn').forEach(btn => {
@@ -189,6 +215,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 else if (targetId.includes('wave-num')) defaultVal = 3;
                 else if (targetId.includes('wave-amp')) defaultVal = 100;
                 else if (targetId.includes('wave-thick')) defaultVal = 2;
+                else if (targetId.includes('shapes-squares')) defaultVal = 20;
+                else if (targetId.includes('shapes-triangles')) defaultVal = 20;
+                else if (targetId.includes('shapes-circles')) defaultVal = 50;
 
                 slider.value = defaultVal;
                 slider.dispatchEvent(new Event('input'));
@@ -231,12 +260,14 @@ function updateActiveUI() {
     const themeOptsContainer = document.getElementById('theme-options-container');
     const particlesOpts = document.getElementById('particles-options');
     const waveOpts = document.getElementById('wave-options');
+    const shapesOpts = document.getElementById('shapes-options');
     
     if (themeOptsContainer) {
-        if (state.theme === 'particles' || state.theme === 'waveInterference') {
+        if (state.theme === 'particles' || state.theme === 'waveInterference' || state.theme === 'shapes') {
             themeOptsContainer.style.display = 'block';
             if (particlesOpts) particlesOpts.classList.toggle('hidden', state.theme !== 'particles');
             if (waveOpts) waveOpts.classList.toggle('hidden', state.theme !== 'waveInterference');
+            if (shapesOpts) shapesOpts.classList.toggle('hidden', state.theme !== 'shapes');
         } else {
             themeOptsContainer.style.display = 'none';
         }

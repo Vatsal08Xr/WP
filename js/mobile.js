@@ -13,6 +13,7 @@ import { drawNebula } from './generators/nebula.js';
 import { drawGridGlitch } from './generators/gridGlitch.js';
 import { drawFlowField } from './generators/flowField.js';
 import { drawOrbitals } from './generators/orbitals.js';
+import { generate as drawShapes } from './generators/shapes.js';
 import { store, renderSavedModal } from './store.js';
 import { generateRandomPalette } from './colorUtils.js';
 
@@ -28,7 +29,8 @@ const generators = {
     nebula: drawNebula,
     gridGlitch: drawGridGlitch,
     flowField: drawFlowField,
-    orbitals: drawOrbitals
+    orbitals: drawOrbitals,
+    shapes: drawShapes
 };
 
 // ----- Elements -----
@@ -132,6 +134,28 @@ document.addEventListener('DOMContentLoaded', () => {
     updateOption('mobile-wave-amp', 'mobile-wave-amp-val', 'waveInterference', 'amp');
     updateOption('mobile-wave-thick', 'mobile-wave-thick-val', 'waveInterference', 'thick', true);
 
+    updateOption('mobile-shapes-squares', 'mobile-shapes-squares-val', 'shapes', 'squares');
+    updateOption('mobile-shapes-triangles', 'mobile-shapes-triangles-val', 'shapes', 'triangles');
+    updateOption('mobile-shapes-circles', 'mobile-shapes-circles-val', 'shapes', 'circles');
+
+    const shapesFillToggle = document.getElementById('mobile-shapes-fill');
+    if (shapesFillToggle) {
+        shapesFillToggle.checked = state.themeOptions.shapes.fill;
+        shapesFillToggle.addEventListener('change', (e) => {
+            state.themeOptions.shapes.fill = e.target.checked;
+            triggerUpdate();
+        });
+    }
+
+    const shapesConnectToggle = document.getElementById('mobile-shapes-connect');
+    if (shapesConnectToggle) {
+        shapesConnectToggle.checked = state.themeOptions.shapes.connect;
+        shapesConnectToggle.addEventListener('change', (e) => {
+            state.themeOptions.shapes.connect = e.target.checked;
+            triggerUpdate();
+        });
+    }
+
     // Reset buttons logic
     document.querySelectorAll('.reset-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
@@ -144,6 +168,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 else if (targetId.includes('wave-num')) defaultVal = 3;
                 else if (targetId.includes('wave-amp')) defaultVal = 100;
                 else if (targetId.includes('wave-thick')) defaultVal = 2;
+                else if (targetId.includes('shapes-squares')) defaultVal = 20;
+                else if (targetId.includes('shapes-triangles')) defaultVal = 20;
+                else if (targetId.includes('shapes-circles')) defaultVal = 50;
 
                 slider.value = defaultVal;
                 slider.dispatchEvent(new Event('input'));
@@ -222,12 +249,14 @@ function updateUI() {
     const themeOptsContainer = document.getElementById('mobile-theme-options-container');
     const particlesOpts = document.getElementById('mobile-particles-options');
     const waveOpts = document.getElementById('mobile-wave-options');
+    const shapesOpts = document.getElementById('mobile-shapes-options');
     
     if (themeOptsContainer) {
-        if (state.theme === 'particles' || state.theme === 'waveInterference') {
+        if (state.theme === 'particles' || state.theme === 'waveInterference' || state.theme === 'shapes') {
             themeOptsContainer.style.display = 'block';
             if (particlesOpts) particlesOpts.classList.toggle('hidden', state.theme !== 'particles');
             if (waveOpts) waveOpts.classList.toggle('hidden', state.theme !== 'waveInterference');
+            if (shapesOpts) shapesOpts.classList.toggle('hidden', state.theme !== 'shapes');
         } else {
             themeOptsContainer.style.display = 'none';
         }

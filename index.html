@@ -118,6 +118,7 @@
                         <button class="option-btn theme-btn aspect-square rounded-md border border-zinc-200 dark:border-zinc-800 flex flex-col items-center justify-center gap-1 hover:bg-zinc-50 dark:hover:bg-zinc-800" data-theme="gridGlitch" data-name="Grid Glitch" title="Grid Glitch"><i data-lucide="binary" class="w-5 h-5"></i></button>
                         <button class="option-btn theme-btn aspect-square rounded-md border border-zinc-200 dark:border-zinc-800 flex flex-col items-center justify-center gap-1 hover:bg-zinc-50 dark:hover:bg-zinc-800" data-theme="flowField" data-name="Flow Field" title="Flow Field"><i data-lucide="wind" class="w-5 h-5"></i></button>
                         <button class="option-btn theme-btn aspect-square rounded-md border border-zinc-200 dark:border-zinc-800 flex flex-col items-center justify-center gap-1 hover:bg-zinc-50 dark:hover:bg-zinc-800" data-theme="orbitals" data-name="Orbitals" title="Orbitals"><i data-lucide="aperture" class="w-5 h-5"></i></button>
+                        <button class="option-btn theme-btn aspect-square rounded-md border border-zinc-200 dark:border-zinc-800 flex flex-col items-center justify-center gap-1 hover:bg-zinc-50 dark:hover:bg-zinc-800" data-theme="shapes" data-name="Shapes" title="Shapes"><i data-lucide="shapes" class="w-5 h-5"></i></button>
                     </div>
                 </div>
                 <div class="space-y-3" id="theme-options-container" style="display: none;">
@@ -170,6 +171,58 @@
                                 <span id="wave-thick-val">2</span>
                             </label>
                             <input type="range" id="wave-thick" min="0.5" max="20" step="0.5" value="2" class="w-full accent-zinc-900 dark:accent-zinc-100">
+                        </div>
+                    </div>
+                    <div id="shapes-options" class="hidden flex flex-col gap-3">
+                        <div class="flex flex-col gap-1">
+                            <label class="text-xs font-medium text-zinc-500 dark:text-zinc-400 flex justify-between items-center w-full">
+                                <span class="flex items-center gap-1">
+                                    Squares
+                                    <button class="reset-btn text-black dark:text-white opacity-60 hover:opacity-100 transition-opacity" data-target="shapes-squares" title="Reset to default">
+                                        <i data-lucide="rotate-ccw" class="w-3 h-3"></i>
+                                    </button>
+                                </span>
+                                <span id="shapes-squares-val">20</span>
+                            </label>
+                            <input type="range" id="shapes-squares" min="0" max="100" value="20" class="w-full accent-zinc-900 dark:accent-zinc-100">
+                        </div>
+                        <div class="flex flex-col gap-1">
+                            <label class="text-xs font-medium text-zinc-500 dark:text-zinc-400 flex justify-between items-center w-full">
+                                <span class="flex items-center gap-1">
+                                    Triangles
+                                    <button class="reset-btn text-black dark:text-white opacity-60 hover:opacity-100 transition-opacity" data-target="shapes-triangles" title="Reset to default">
+                                        <i data-lucide="rotate-ccw" class="w-3 h-3"></i>
+                                    </button>
+                                </span>
+                                <span id="shapes-triangles-val">20</span>
+                            </label>
+                            <input type="range" id="shapes-triangles" min="0" max="100" value="20" class="w-full accent-zinc-900 dark:accent-zinc-100">
+                        </div>
+                        <div class="flex flex-col gap-1">
+                            <label class="text-xs font-medium text-zinc-500 dark:text-zinc-400 flex justify-between items-center w-full">
+                                <span class="flex items-center gap-1">
+                                    Circles
+                                    <button class="reset-btn text-black dark:text-white opacity-60 hover:opacity-100 transition-opacity" data-target="shapes-circles" title="Reset to default">
+                                        <i data-lucide="rotate-ccw" class="w-3 h-3"></i>
+                                    </button>
+                                </span>
+                                <span id="shapes-circles-val">50</span>
+                            </label>
+                            <input type="range" id="shapes-circles" min="0" max="100" value="50" class="w-full accent-zinc-900 dark:accent-zinc-100">
+                        </div>
+                        <div class="flex items-center justify-between mt-1">
+                            <label class="text-xs font-medium text-zinc-500 dark:text-zinc-400">Color Fill</label>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="shapes-fill" class="sr-only peer">
+                                <div class="w-9 h-5 bg-zinc-200 peer-focus:outline-none rounded-full peer dark:bg-zinc-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-zinc-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-zinc-600 peer-checked:bg-zinc-900 dark:peer-checked:bg-zinc-100"></div>
+                            </label>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <label class="text-xs font-medium text-zinc-500 dark:text-zinc-400" title="Connect shapes without overlapping">Connected Network</label>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="shapes-connect" class="sr-only peer">
+                                <div class="w-9 h-5 bg-zinc-200 peer-focus:outline-none rounded-full peer dark:bg-zinc-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-zinc-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-zinc-600 peer-checked:bg-zinc-900 dark:peer-checked:bg-zinc-100"></div>
+                            </label>
                         </div>
                     </div>
                 </div>
@@ -381,6 +434,58 @@
                                 <span id="mobile-wave-thick-val">2</span>
                             </label>
                             <input type="range" id="mobile-wave-thick" min="0.5" max="20" step="0.5" value="2" class="w-full accent-zinc-900 dark:accent-zinc-100">
+                        </div>
+                    </div>
+                    <div id="mobile-shapes-options" class="hidden flex flex-col gap-3">
+                        <div class="flex flex-col gap-1">
+                            <label class="text-xs font-medium text-zinc-500 dark:text-zinc-400 flex justify-between items-center w-full">
+                                <span class="flex items-center gap-1">
+                                    Squares
+                                    <button class="reset-btn text-black dark:text-white opacity-60 hover:opacity-100 transition-opacity" data-target="mobile-shapes-squares" title="Reset to default">
+                                        <i data-lucide="rotate-ccw" class="w-3 h-3"></i>
+                                    </button>
+                                </span>
+                                <span id="mobile-shapes-squares-val">20</span>
+                            </label>
+                            <input type="range" id="mobile-shapes-squares" min="0" max="100" value="20" class="w-full accent-zinc-900 dark:accent-zinc-100">
+                        </div>
+                        <div class="flex flex-col gap-1">
+                            <label class="text-xs font-medium text-zinc-500 dark:text-zinc-400 flex justify-between items-center w-full">
+                                <span class="flex items-center gap-1">
+                                    Triangles
+                                    <button class="reset-btn text-black dark:text-white opacity-60 hover:opacity-100 transition-opacity" data-target="mobile-shapes-triangles" title="Reset to default">
+                                        <i data-lucide="rotate-ccw" class="w-3 h-3"></i>
+                                    </button>
+                                </span>
+                                <span id="mobile-shapes-triangles-val">20</span>
+                            </label>
+                            <input type="range" id="mobile-shapes-triangles" min="0" max="100" value="20" class="w-full accent-zinc-900 dark:accent-zinc-100">
+                        </div>
+                        <div class="flex flex-col gap-1">
+                            <label class="text-xs font-medium text-zinc-500 dark:text-zinc-400 flex justify-between items-center w-full">
+                                <span class="flex items-center gap-1">
+                                    Circles
+                                    <button class="reset-btn text-black dark:text-white opacity-60 hover:opacity-100 transition-opacity" data-target="mobile-shapes-circles" title="Reset to default">
+                                        <i data-lucide="rotate-ccw" class="w-3 h-3"></i>
+                                    </button>
+                                </span>
+                                <span id="mobile-shapes-circles-val">50</span>
+                            </label>
+                            <input type="range" id="mobile-shapes-circles" min="0" max="100" value="50" class="w-full accent-zinc-900 dark:accent-zinc-100">
+                        </div>
+                        <div class="flex items-center justify-between mt-1">
+                            <label class="text-xs font-medium text-zinc-500 dark:text-zinc-400">Color Fill</label>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="mobile-shapes-fill" class="sr-only peer">
+                                <div class="w-9 h-5 bg-zinc-200 peer-focus:outline-none rounded-full peer dark:bg-zinc-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-zinc-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-zinc-600 peer-checked:bg-zinc-900 dark:peer-checked:bg-zinc-100"></div>
+                            </label>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <label class="text-xs font-medium text-zinc-500 dark:text-zinc-400" title="Connect shapes without overlapping">Connected Network</label>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="mobile-shapes-connect" class="sr-only peer">
+                                <div class="w-9 h-5 bg-zinc-200 peer-focus:outline-none rounded-full peer dark:bg-zinc-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-zinc-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-zinc-600 peer-checked:bg-zinc-900 dark:peer-checked:bg-zinc-100"></div>
+                            </label>
                         </div>
                     </div>
                 </div>
