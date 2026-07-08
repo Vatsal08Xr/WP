@@ -1,8 +1,8 @@
-export function drawParticles(ctx, width, height, colors, rng) {
+export function drawParticles(ctx, width, height, colors, rng, options = {}) {
     ctx.fillStyle = colors.bg;
     ctx.fillRect(0, 0, width, height);
     
-    const numParticles = 200;
+    const numParticles = options.num || 150;
     const maxDistance = Math.min(width, height) * 0.15;
     
     const particles = [];

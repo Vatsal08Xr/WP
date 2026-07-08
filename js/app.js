@@ -42,13 +42,24 @@ let state = {
         bg: '#18181b',
         colors: ['#3b82f6', '#8b5cf6', '#ec4899']
     },
-    isLocked: false
+    isLocked: false,
+    themeOptions: {
+        particles: { num: 150 },
+        waveInterference: { num: 3, amp: 100, thick: 2 }
+    }
 };
 
 try {
     const saved = localStorage.getItem('wallgen_session');
     if (saved) {
-        state = { ...state, ...JSON.parse(saved) };
+        const parsed = JSON.parse(saved);
+        state = { ...state, ...parsed };
+        if (parsed.themeOptions) {
+            state.themeOptions = {
+                particles: { ...state.themeOptions.particles, ...parsed.themeOptions.particles },
+                waveInterference: { ...state.themeOptions.waveInterference, ...parsed.themeOptions.waveInterference }
+            };
+        }
     }
 } catch(e) {}
 
@@ -146,6 +157,25 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         accentPickrs.push(picker);
     });
+
+    // Theme options sliders setup
+    const updateOption = (id, valId, theme, key, isFloat = false) => {
+        const el = document.getElementById(id);
+        const valEl = document.getElementById(valId);
+        if (el && valEl) {
+            el.value = state.themeOptions[theme][key];
+            valEl.textContent = el.value;
+            el.addEventListener('input', (e) => {
+                valEl.textContent = e.target.value;
+                state.themeOptions[theme][key] = isFloat ? parseFloat(e.target.value) : parseInt(e.target.value);
+                triggerUpdate();
+            });
+        }
+    };
+    updateOption('particles-num', 'particles-num-val', 'particles', 'num');
+    updateOption('wave-num', 'wave-num-val', 'waveInterference', 'num');
+    updateOption('wave-amp', 'wave-amp-val', 'waveInterference', 'amp');
+    updateOption('wave-thick', 'wave-thick-val', 'waveInterference', 'thick', true);
 });
 
 function updateCustomPaletteUI() {
@@ -178,6 +208,20 @@ function updateActiveUI() {
         if(btn.dataset.palette === state.palette) btn.classList.add('active');
         else btn.classList.remove('active');
     });
+
+    const themeOptsContainer = document.getElementById('theme-options-container');
+    const particlesOpts = document.getElementById('particles-options');
+    const waveOpts = document.getElementById('wave-options');
+    
+    if (themeOptsContainer) {
+        if (state.theme === 'particles' || state.theme === 'waveInterference') {
+            themeOptsContainer.style.display = 'block';
+            if (particlesOpts) particlesOpts.classList.toggle('hidden', state.theme !== 'particles');
+            if (waveOpts) waveOpts.classList.toggle('hidden', state.theme !== 'waveInterference');
+        } else {
+            themeOptsContainer.style.display = 'none';
+        }
+    }
 
     if (state.palette === 'custom') {
         customPaletteEditor.classList.remove('hidden');
@@ -283,7 +327,7 @@ function render(width, height) {
     
     const colors = getColors();
     const rng = seedrandom(state.seed);
-    generatorFn(ctx, width, height, colors, rng);
+    generatorFn(ctx, width, height, colors, rng, state.themeOptions?.[state.theme]);
 }
 
 
@@ -445,11 +489,11 @@ previewIphoneBtn.addEventListener('click', () => {
 });
 
 btnDlDesktop.addEventListener('click', () => {
-    downloadCanvas(3840, 2160, generators[state.theme], getColors(), state.seed, `wallpaper-desktop-${state.theme}-${state.seed}.png`);
+    downloadCanvas(3840, 2160, generators[state.theme], getColors(), state.seed, `wallpaper-desktop-${state.theme}-${state.seed}.png`, state.themeOptions?.[state.theme]);
 });
 
 btnDlIphone.addEventListener('click', () => {
-    downloadCanvas(1290, 2796, generators[state.theme], getColors(), state.seed, `wallpaper-iphone-${state.theme}-${state.seed}.png`);
+    downloadCanvas(1290, 2796, generators[state.theme], getColors(), state.seed, `wallpaper-iphone-${state.theme}-${state.seed}.png`, state.themeOptions?.[state.theme]);
 });
 
 function init() {

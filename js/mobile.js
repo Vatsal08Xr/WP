@@ -112,6 +112,25 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         mobileAccentPickrs.push(picker);
     });
+
+    // Theme options sliders setup
+    const updateOption = (id, valId, theme, key, isFloat = false) => {
+        const el = document.getElementById(id);
+        const valEl = document.getElementById(valId);
+        if (el && valEl) {
+            el.value = state.themeOptions[theme][key];
+            valEl.textContent = el.value;
+            el.addEventListener('input', (e) => {
+                valEl.textContent = e.target.value;
+                state.themeOptions[theme][key] = isFloat ? parseFloat(e.target.value) : parseInt(e.target.value);
+                triggerUpdate();
+            });
+        }
+    };
+    updateOption('mobile-particles-num', 'mobile-particles-num-val', 'particles', 'num');
+    updateOption('mobile-wave-num', 'mobile-wave-num-val', 'waveInterference', 'num');
+    updateOption('mobile-wave-amp', 'mobile-wave-amp-val', 'waveInterference', 'amp');
+    updateOption('mobile-wave-thick', 'mobile-wave-thick-val', 'waveInterference', 'thick', true);
 });
 
 function updateCustomPaletteUI() {
@@ -138,13 +157,24 @@ const state = {
     previewMode: 'desktop',
     seed: Math.random().toString(36).substring(2, 15),
     customPalette: { bg: '#18181b', colors: ['#3b82f6', '#8b5cf6', '#ec4899'] },
-    isLocked: false
+    isLocked: false,
+    themeOptions: {
+        particles: { num: 150 },
+        waveInterference: { num: 3, amp: 100, thick: 2 }
+    }
 };
 
 try {
     const saved = localStorage.getItem('wallgen_session');
     if (saved) {
-        Object.assign(state, JSON.parse(saved));
+        const parsed = JSON.parse(saved);
+        Object.assign(state, parsed);
+        if (parsed.themeOptions) {
+            state.themeOptions = {
+                particles: { ...state.themeOptions.particles, ...parsed.themeOptions.particles },
+                waveInterference: { ...state.themeOptions.waveInterference, ...parsed.themeOptions.waveInterference }
+            };
+        }
     }
 } catch(e) {}
 
@@ -169,6 +199,20 @@ function updateUI() {
     document.querySelectorAll('#mobile-palette-grid .palette-btn').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.palette === state.palette);
     });
+
+    const themeOptsContainer = document.getElementById('mobile-theme-options-container');
+    const particlesOpts = document.getElementById('mobile-particles-options');
+    const waveOpts = document.getElementById('mobile-wave-options');
+    
+    if (themeOptsContainer) {
+        if (state.theme === 'particles' || state.theme === 'waveInterference') {
+            themeOptsContainer.style.display = 'block';
+            if (particlesOpts) particlesOpts.classList.toggle('hidden', state.theme !== 'particles');
+            if (waveOpts) waveOpts.classList.toggle('hidden', state.theme !== 'waveInterference');
+        } else {
+            themeOptsContainer.style.display = 'none';
+        }
+    }
 
     if (state.palette === 'custom') {
         customPaletteEditor?.classList.remove('hidden');
@@ -248,10 +292,7 @@ function triggerUpdate() {
         canvas.style.height = `${h}px`;
         ctx.setTransform(1, 0, 0, 1, 0, 0);
 
-        const generatorFn = generators[state.theme];
-        if (!generatorFn) return;
-        const rng = seedrandom(state.seed);
-        generatorFn(ctx, canvas.width, canvas.height, getColors(), rng);
+        render(canvas.width, canvas.height);
     }, 60);
 }
 
@@ -410,12 +451,16 @@ previewIphoneBtn?.addEventListener('click', () => {
 
 dlDesktopBtn?.addEventListener('click', () => {
     downloadCanvas(3840, 2160, generators[state.theme], getColors(), state.seed,
-        `wallpaper-desktop-${state.theme}-${state.seed}.png`);
+        `wallpaper-desktop-${state.theme}-${state.seed}.png`, state.themeOptions?.[state.theme]);
 });
 
 dlIphoneBtn?.addEventListener('click', () => {
     downloadCanvas(1290, 2796, generators[state.theme], getColors(), state.seed,
-        `wallpaper-iphone-${state.theme}-${state.seed}.png`);
+        `wallpaper-iphone-${state.theme}-${state.seed}.png`, state.themeOptions?.[state.theme]);
+});
+
+btnSaveWallpaper.addEventListener('click', () => {
+    downloadCanvas(1290, 2796, generators[state.theme], getColors(), state.seed, `wallpaper-mobile-${state.theme}-${state.seed}.png`, state.themeOptions?.[state.theme]);
 });
 
 window.addEventListener('resize', triggerUpdate);

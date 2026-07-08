@@ -120,6 +120,35 @@
                         <button class="option-btn theme-btn aspect-square rounded-md border border-zinc-200 dark:border-zinc-800 flex flex-col items-center justify-center gap-1 hover:bg-zinc-50 dark:hover:bg-zinc-800" data-theme="orbitals" data-name="Orbitals" title="Orbitals"><i data-lucide="aperture" class="w-5 h-5"></i></button>
                     </div>
                 </div>
+                <div class="space-y-3" id="theme-options-container" style="display: none;">
+                    <label class="block text-sm font-medium text-zinc-500 dark:text-zinc-400">Theme Options</label>
+                    <div id="particles-options" class="hidden flex flex-col gap-2">
+                        <label class="text-xs font-medium text-zinc-500 dark:text-zinc-400 flex justify-between">
+                            Number of Particles <span id="particles-num-val">150</span>
+                        </label>
+                        <input type="range" id="particles-num" min="1" max="500" value="150" class="w-full accent-zinc-900 dark:accent-zinc-100">
+                    </div>
+                    <div id="wave-options" class="hidden flex flex-col gap-3">
+                        <div class="flex flex-col gap-1">
+                            <label class="text-xs font-medium text-zinc-500 dark:text-zinc-400 flex justify-between">
+                                Number of Waves <span id="wave-num-val">3</span>
+                            </label>
+                            <input type="range" id="wave-num" min="1" max="100" value="3" class="w-full accent-zinc-900 dark:accent-zinc-100">
+                        </div>
+                        <div class="flex flex-col gap-1">
+                            <label class="text-xs font-medium text-zinc-500 dark:text-zinc-400 flex justify-between">
+                                Amplitude <span id="wave-amp-val">100</span>
+                            </label>
+                            <input type="range" id="wave-amp" min="0" max="300" value="100" class="w-full accent-zinc-900 dark:accent-zinc-100">
+                        </div>
+                        <div class="flex flex-col gap-1">
+                            <label class="text-xs font-medium text-zinc-500 dark:text-zinc-400 flex justify-between">
+                                Thickness <span id="wave-thick-val">2</span>
+                            </label>
+                            <input type="range" id="wave-thick" min="0.5" max="20" step="0.5" value="2" class="w-full accent-zinc-900 dark:accent-zinc-100">
+                        </div>
+                    </div>
+                </div>
                 <div class="space-y-3">
                     <label class="block text-sm font-medium text-zinc-500 dark:text-zinc-400">Color Palette</label>
                     <div class="grid grid-cols-4 gap-2" id="palette-grid">
@@ -276,6 +305,35 @@
                         <button class="option-btn theme-btn aspect-square rounded-md border border-zinc-200 dark:border-zinc-800 flex flex-col items-center justify-center gap-1 hover:bg-zinc-50 dark:hover:bg-zinc-800" data-theme="gridGlitch" data-name="Grid Glitch" title="Grid Glitch"><i data-lucide="binary" class="w-5 h-5"></i></button>
                         <button class="option-btn theme-btn aspect-square rounded-md border border-zinc-200 dark:border-zinc-800 flex flex-col items-center justify-center gap-1 hover:bg-zinc-50 dark:hover:bg-zinc-800" data-theme="flowField" data-name="Flow Field" title="Flow Field"><i data-lucide="wind" class="w-5 h-5"></i></button>
                         <button class="option-btn theme-btn aspect-square rounded-md border border-zinc-200 dark:border-zinc-800 flex flex-col items-center justify-center gap-1 hover:bg-zinc-50 dark:hover:bg-zinc-800" data-theme="orbitals" data-name="Orbitals" title="Orbitals"><i data-lucide="aperture" class="w-5 h-5"></i></button>
+                    </div>
+                </div>
+                <div class="space-y-3" id="mobile-theme-options-container" style="display: none;">
+                    <label class="block text-sm font-medium text-zinc-500 dark:text-zinc-400">Theme Options</label>
+                    <div id="mobile-particles-options" class="hidden flex flex-col gap-2">
+                        <label class="text-xs font-medium text-zinc-500 dark:text-zinc-400 flex justify-between">
+                            Number of Particles <span id="mobile-particles-num-val">150</span>
+                        </label>
+                        <input type="range" id="mobile-particles-num" min="1" max="500" value="150" class="w-full accent-zinc-900 dark:accent-zinc-100">
+                    </div>
+                    <div id="mobile-wave-options" class="hidden flex flex-col gap-3">
+                        <div class="flex flex-col gap-1">
+                            <label class="text-xs font-medium text-zinc-500 dark:text-zinc-400 flex justify-between">
+                                Number of Waves <span id="mobile-wave-num-val">3</span>
+                            </label>
+                            <input type="range" id="mobile-wave-num" min="1" max="100" value="3" class="w-full accent-zinc-900 dark:accent-zinc-100">
+                        </div>
+                        <div class="flex flex-col gap-1">
+                            <label class="text-xs font-medium text-zinc-500 dark:text-zinc-400 flex justify-between">
+                                Amplitude <span id="mobile-wave-amp-val">100</span>
+                            </label>
+                            <input type="range" id="mobile-wave-amp" min="0" max="300" value="100" class="w-full accent-zinc-900 dark:accent-zinc-100">
+                        </div>
+                        <div class="flex flex-col gap-1">
+                            <label class="text-xs font-medium text-zinc-500 dark:text-zinc-400 flex justify-between">
+                                Thickness <span id="mobile-wave-thick-val">2</span>
+                            </label>
+                            <input type="range" id="mobile-wave-thick" min="0.5" max="20" step="0.5" value="2" class="w-full accent-zinc-900 dark:accent-zinc-100">
+                        </div>
                     </div>
                 </div>
                 <!-- Mobile Palettes -->

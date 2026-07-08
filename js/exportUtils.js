@@ -1,6 +1,6 @@
 import seedrandom from 'https://esm.sh/seedrandom@3.0.5';
 
-export function downloadCanvas(width, height, generatorFn, colors, seed, filename) {
+export function downloadCanvas(width, height, generatorFn, colors, seed, filename, options) {
     const canvas = document.createElement('canvas');
     canvas.width = width;
     canvas.height = height;
@@ -8,7 +8,7 @@ export function downloadCanvas(width, height, generatorFn, colors, seed, filenam
     
     const rng = seedrandom(seed);
     
-    generatorFn(ctx, width, height, colors, rng);
+    generatorFn(ctx, width, height, colors, rng, options);
     
     const dataUrl = canvas.toDataURL('image/png', 1.0);
     const a = document.createElement('a');
