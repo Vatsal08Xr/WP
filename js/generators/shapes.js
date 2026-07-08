@@ -5,24 +5,43 @@ export function generate(ctx, width, height, colors, rng, options = {}) {
     const numSquares = options.squares !== undefined ? options.squares : 20;
     const numTriangles = options.triangles !== undefined ? options.triangles : 20;
     const numCircles = options.circles !== undefined ? options.circles : 50;
+    const sizeScale = (options.size !== undefined ? options.size : 100) / 100;
+    const userThick = options.thick !== undefined ? options.thick : 2;
     const fill = options.fill || false;
     const connect = options.connect || false;
 
     let shapes = [];
+    const totalShapes = numSquares + numTriangles + numCircles;
+    const exactSizeIndices = new Set();
+    const exactThickIndices = new Set();
+    for (let i = 0; i < 3; i++) {
+        exactSizeIndices.add(Math.floor(rng() * totalShapes));
+        exactThickIndices.add(Math.floor(rng() * totalShapes));
+    }
     
+    let shapeIndex = 0;
     // Generate shapes
     const addShapes = (count, type) => {
         for (let i = 0; i < count; i++) {
-            const radius = (rng() * 0.06 + 0.01) * Math.min(width, height);
+            const isExactSize = exactSizeIndices.has(shapeIndex);
+            const isExactThick = exactThickIndices.has(shapeIndex);
+            
+            const baseRadius = sizeScale * 0.07 * Math.min(width, height);
+            const radius = isExactSize ? baseRadius : baseRadius * (1 - (0.05 + rng() * 0.15));
+            
+            const shapeThick = isExactThick ? userThick : userThick * (1 - (0.01 + rng() * 0.02));
+
             shapes.push({
                 x: rng() * width,
                 y: rng() * height,
                 radius: radius,
+                thick: shapeThick,
                 type: type,
                 color: colors.colors[Math.floor(rng() * colors.colors.length)],
                 rotation: rng() * Math.PI * 2,
                 opacity: rng() * 0.6 + 0.2 // Between 0.2 and 0.8
             });
+            shapeIndex++;
         }
     };
 
@@ -102,7 +121,7 @@ export function generate(ctx, width, height, colors, rng, options = {}) {
         } else {
             // Outline with glow
             ctx.strokeStyle = s.color;
-            ctx.lineWidth = Math.max(1.5, s.radius * 0.04);
+            ctx.lineWidth = Math.max(1, s.thick * (Math.min(width, height) / 1000));
             ctx.shadowColor = s.color;
             ctx.shadowBlur = s.radius * 0.3;
         }
@@ -127,7 +146,7 @@ export function generate(ctx, width, height, colors, rng, options = {}) {
             ctx.fill();
             // A subtle stroke around filled shapes to define them
             ctx.strokeStyle = s.color;
-            ctx.lineWidth = Math.max(1, s.radius * 0.02);
+            ctx.lineWidth = Math.max(1, (s.thick * 0.5) * (Math.min(width, height) / 1000));
             ctx.globalAlpha = 1.0; // Solid border
             ctx.stroke();
         } else {

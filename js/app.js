@@ -48,7 +48,7 @@ let state = {
     themeOptions: {
         particles: { num: 150 },
         waveInterference: { num: 3, amp: 100, thick: 2 },
-        shapes: { squares: 20, triangles: 20, circles: 50, fill: false, connect: false }
+        shapes: { squares: 20, triangles: 20, circles: 50, size: 100, thick: 2, fill: false, connect: false }
     }
 };
 
@@ -184,6 +184,8 @@ document.addEventListener('DOMContentLoaded', () => {
     updateOption('shapes-squares', 'shapes-squares-val', 'shapes', 'squares');
     updateOption('shapes-triangles', 'shapes-triangles-val', 'shapes', 'triangles');
     updateOption('shapes-circles', 'shapes-circles-val', 'shapes', 'circles');
+    updateOption('shapes-size', 'shapes-size-val', 'shapes', 'size');
+    updateOption('shapes-thick', 'shapes-thick-val', 'shapes', 'thick', true);
 
     const shapesFillToggle = document.getElementById('shapes-fill');
     if (shapesFillToggle) {
@@ -218,6 +220,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 else if (targetId.includes('shapes-squares')) defaultVal = 20;
                 else if (targetId.includes('shapes-triangles')) defaultVal = 20;
                 else if (targetId.includes('shapes-circles')) defaultVal = 50;
+                else if (targetId.includes('shapes-size')) defaultVal = 100;
+                else if (targetId.includes('shapes-thick')) defaultVal = 2;
 
                 slider.value = defaultVal;
                 slider.dispatchEvent(new Event('input'));

@@ -137,6 +137,8 @@ document.addEventListener('DOMContentLoaded', () => {
     updateOption('mobile-shapes-squares', 'mobile-shapes-squares-val', 'shapes', 'squares');
     updateOption('mobile-shapes-triangles', 'mobile-shapes-triangles-val', 'shapes', 'triangles');
     updateOption('mobile-shapes-circles', 'mobile-shapes-circles-val', 'shapes', 'circles');
+    updateOption('mobile-shapes-size', 'mobile-shapes-size-val', 'shapes', 'size');
+    updateOption('mobile-shapes-thick', 'mobile-shapes-thick-val', 'shapes', 'thick', true);
 
     const shapesFillToggle = document.getElementById('mobile-shapes-fill');
     if (shapesFillToggle) {
@@ -171,6 +173,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 else if (targetId.includes('shapes-squares')) defaultVal = 20;
                 else if (targetId.includes('shapes-triangles')) defaultVal = 20;
                 else if (targetId.includes('shapes-circles')) defaultVal = 50;
+                else if (targetId.includes('shapes-size')) defaultVal = 100;
+                else if (targetId.includes('shapes-thick')) defaultVal = 2;
 
                 slider.value = defaultVal;
                 slider.dispatchEvent(new Event('input'));
