@@ -211,7 +211,8 @@ const state = {
     isCustomPaletteOpen: false,
     themeOptions: {
         particles: { num: 150 },
-        waveInterference: { num: 3, amp: 100, thick: 2 }
+        waveInterference: { num: 3, amp: 100, thick: 2 },
+        shapes: { squares: 20, triangles: 20, circles: 50, size: 100, thick: 2, fill: false, connect: false }
     }
 };
 
@@ -223,7 +224,8 @@ try {
         if (parsed.themeOptions) {
             state.themeOptions = {
                 particles: { ...state.themeOptions.particles, ...parsed.themeOptions.particles },
-                waveInterference: { ...state.themeOptions.waveInterference, ...parsed.themeOptions.waveInterference }
+                waveInterference: { ...state.themeOptions.waveInterference, ...parsed.themeOptions.waveInterference },
+                shapes: { ...state.themeOptions.shapes, ...parsed.themeOptions.shapes }
             };
         }
     }
@@ -521,10 +523,6 @@ dlIphoneBtn?.addEventListener('click', () => {
         `wallpaper-iphone-${state.theme}-${state.seed}.png`, state.themeOptions?.[state.theme]);
 });
 
-btnSaveWallpaper.addEventListener('click', () => {
-    downloadCanvas(1290, 2796, generators[state.theme], getColors(), state.seed, `wallpaper-mobile-${state.theme}-${state.seed}.png`, state.themeOptions?.[state.theme]);
-});
-
 window.addEventListener('resize', triggerUpdate);
 
 // ----- Init: use ResizeObserver so we render as soon as the container has real size -----
@@ -540,6 +538,7 @@ ro.observe(outer);
 
 // Also run immediately in case layout is already done
 updateUI();
+updateCustomPaletteUI();
 triggerUpdate();
 
 window.addEventListener('saved-wallpapers-changed', updateHeartUI);
