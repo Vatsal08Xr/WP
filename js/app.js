@@ -176,6 +176,25 @@ document.addEventListener('DOMContentLoaded', () => {
     updateOption('wave-num', 'wave-num-val', 'waveInterference', 'num');
     updateOption('wave-amp', 'wave-amp-val', 'waveInterference', 'amp');
     updateOption('wave-thick', 'wave-thick-val', 'waveInterference', 'thick', true);
+
+    // Reset buttons logic
+    document.querySelectorAll('.reset-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            const targetId = e.currentTarget.dataset.target;
+            const slider = document.getElementById(targetId);
+            if (slider) {
+                let defaultVal = 150;
+                if (targetId.includes('particles-num')) defaultVal = 150;
+                else if (targetId.includes('wave-num')) defaultVal = 3;
+                else if (targetId.includes('wave-amp')) defaultVal = 100;
+                else if (targetId.includes('wave-thick')) defaultVal = 2;
+
+                slider.value = defaultVal;
+                slider.dispatchEvent(new Event('input'));
+            }
+        });
+    });
 });
 
 function updateCustomPaletteUI() {

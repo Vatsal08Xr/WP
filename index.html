@@ -123,27 +123,51 @@
                 <div class="space-y-3" id="theme-options-container" style="display: none;">
                     <label class="block text-sm font-medium text-zinc-500 dark:text-zinc-400">Theme Options</label>
                     <div id="particles-options" class="hidden flex flex-col gap-2">
-                        <label class="text-xs font-medium text-zinc-500 dark:text-zinc-400 flex justify-between">
-                            Number of Particles <span id="particles-num-val">150</span>
+                        <label class="text-xs font-medium text-zinc-500 dark:text-zinc-400 flex justify-between items-center w-full">
+                            <span class="flex items-center gap-1">
+                                Number of Particles
+                                <button class="reset-btn text-black dark:text-white opacity-60 hover:opacity-100 transition-opacity" data-target="particles-num" title="Reset to default">
+                                    <i data-lucide="rotate-ccw" class="w-3 h-3"></i>
+                                </button>
+                            </span>
+                            <span id="particles-num-val">150</span>
                         </label>
                         <input type="range" id="particles-num" min="1" max="500" value="150" class="w-full accent-zinc-900 dark:accent-zinc-100">
                     </div>
                     <div id="wave-options" class="hidden flex flex-col gap-3">
                         <div class="flex flex-col gap-1">
-                            <label class="text-xs font-medium text-zinc-500 dark:text-zinc-400 flex justify-between">
-                                Number of Waves <span id="wave-num-val">3</span>
+                            <label class="text-xs font-medium text-zinc-500 dark:text-zinc-400 flex justify-between items-center w-full">
+                                <span class="flex items-center gap-1">
+                                    Number of Waves
+                                    <button class="reset-btn text-black dark:text-white opacity-60 hover:opacity-100 transition-opacity" data-target="wave-num" title="Reset to default">
+                                        <i data-lucide="rotate-ccw" class="w-3 h-3"></i>
+                                    </button>
+                                </span>
+                                <span id="wave-num-val">3</span>
                             </label>
                             <input type="range" id="wave-num" min="1" max="100" value="3" class="w-full accent-zinc-900 dark:accent-zinc-100">
                         </div>
                         <div class="flex flex-col gap-1">
-                            <label class="text-xs font-medium text-zinc-500 dark:text-zinc-400 flex justify-between">
-                                Amplitude <span id="wave-amp-val">100</span>
+                            <label class="text-xs font-medium text-zinc-500 dark:text-zinc-400 flex justify-between items-center w-full">
+                                <span class="flex items-center gap-1">
+                                    Amplitude
+                                    <button class="reset-btn text-black dark:text-white opacity-60 hover:opacity-100 transition-opacity" data-target="wave-amp" title="Reset to default">
+                                        <i data-lucide="rotate-ccw" class="w-3 h-3"></i>
+                                    </button>
+                                </span>
+                                <span id="wave-amp-val">100</span>
                             </label>
                             <input type="range" id="wave-amp" min="0" max="300" value="100" class="w-full accent-zinc-900 dark:accent-zinc-100">
                         </div>
                         <div class="flex flex-col gap-1">
-                            <label class="text-xs font-medium text-zinc-500 dark:text-zinc-400 flex justify-between">
-                                Thickness <span id="wave-thick-val">2</span>
+                            <label class="text-xs font-medium text-zinc-500 dark:text-zinc-400 flex justify-between items-center w-full">
+                                <span class="flex items-center gap-1">
+                                    Thickness
+                                    <button class="reset-btn text-black dark:text-white opacity-60 hover:opacity-100 transition-opacity" data-target="wave-thick" title="Reset to default">
+                                        <i data-lucide="rotate-ccw" class="w-3 h-3"></i>
+                                    </button>
+                                </span>
+                                <span id="wave-thick-val">2</span>
                             </label>
                             <input type="range" id="wave-thick" min="0.5" max="20" step="0.5" value="2" class="w-full accent-zinc-900 dark:accent-zinc-100">
                         </div>
@@ -310,27 +334,51 @@
                 <div class="space-y-3" id="mobile-theme-options-container" style="display: none;">
                     <label class="block text-sm font-medium text-zinc-500 dark:text-zinc-400">Theme Options</label>
                     <div id="mobile-particles-options" class="hidden flex flex-col gap-2">
-                        <label class="text-xs font-medium text-zinc-500 dark:text-zinc-400 flex justify-between">
-                            Number of Particles <span id="mobile-particles-num-val">150</span>
+                        <label class="text-xs font-medium text-zinc-500 dark:text-zinc-400 flex justify-between items-center w-full">
+                            <span class="flex items-center gap-1">
+                                Number of Particles
+                                <button class="reset-btn text-black dark:text-white opacity-60 hover:opacity-100 transition-opacity" data-target="mobile-particles-num" title="Reset to default">
+                                    <i data-lucide="rotate-ccw" class="w-3 h-3"></i>
+                                </button>
+                            </span>
+                            <span id="mobile-particles-num-val">150</span>
                         </label>
                         <input type="range" id="mobile-particles-num" min="1" max="500" value="150" class="w-full accent-zinc-900 dark:accent-zinc-100">
                     </div>
                     <div id="mobile-wave-options" class="hidden flex flex-col gap-3">
                         <div class="flex flex-col gap-1">
-                            <label class="text-xs font-medium text-zinc-500 dark:text-zinc-400 flex justify-between">
-                                Number of Waves <span id="mobile-wave-num-val">3</span>
+                            <label class="text-xs font-medium text-zinc-500 dark:text-zinc-400 flex justify-between items-center w-full">
+                                <span class="flex items-center gap-1">
+                                    Number of Waves
+                                    <button class="reset-btn text-black dark:text-white opacity-60 hover:opacity-100 transition-opacity" data-target="mobile-wave-num" title="Reset to default">
+                                        <i data-lucide="rotate-ccw" class="w-3 h-3"></i>
+                                    </button>
+                                </span>
+                                <span id="mobile-wave-num-val">3</span>
                             </label>
                             <input type="range" id="mobile-wave-num" min="1" max="100" value="3" class="w-full accent-zinc-900 dark:accent-zinc-100">
                         </div>
                         <div class="flex flex-col gap-1">
-                            <label class="text-xs font-medium text-zinc-500 dark:text-zinc-400 flex justify-between">
-                                Amplitude <span id="mobile-wave-amp-val">100</span>
+                            <label class="text-xs font-medium text-zinc-500 dark:text-zinc-400 flex justify-between items-center w-full">
+                                <span class="flex items-center gap-1">
+                                    Amplitude
+                                    <button class="reset-btn text-black dark:text-white opacity-60 hover:opacity-100 transition-opacity" data-target="mobile-wave-amp" title="Reset to default">
+                                        <i data-lucide="rotate-ccw" class="w-3 h-3"></i>
+                                    </button>
+                                </span>
+                                <span id="mobile-wave-amp-val">100</span>
                             </label>
                             <input type="range" id="mobile-wave-amp" min="0" max="300" value="100" class="w-full accent-zinc-900 dark:accent-zinc-100">
                         </div>
                         <div class="flex flex-col gap-1">
-                            <label class="text-xs font-medium text-zinc-500 dark:text-zinc-400 flex justify-between">
-                                Thickness <span id="mobile-wave-thick-val">2</span>
+                            <label class="text-xs font-medium text-zinc-500 dark:text-zinc-400 flex justify-between items-center w-full">
+                                <span class="flex items-center gap-1">
+                                    Thickness
+                                    <button class="reset-btn text-black dark:text-white opacity-60 hover:opacity-100 transition-opacity" data-target="mobile-wave-thick" title="Reset to default">
+                                        <i data-lucide="rotate-ccw" class="w-3 h-3"></i>
+                                    </button>
+                                </span>
+                                <span id="mobile-wave-thick-val">2</span>
                             </label>
                             <input type="range" id="mobile-wave-thick" min="0.5" max="20" step="0.5" value="2" class="w-full accent-zinc-900 dark:accent-zinc-100">
                         </div>
