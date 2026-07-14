@@ -1,467 +1,403 @@
-import { createNoise2D, createNoise3D } from 'https://esm.sh/simplex-noise@4.0.1';
+import { createNoise2D } from 'https://esm.sh/simplex-noise@4.0.1';
 
-// ─── Utility ────────────────────────────────────────────────────────────────
+// ─── Utilities ──────────────────────────────────────────────────────────
 
 function hexToRgb(hex) {
-    if (!hex) return [255, 255, 255];
+    if (!hex) return [200, 200, 200];
     const h = hex.replace('#', '');
     return [
-        parseInt(h.substring(0, 2), 16),
-        parseInt(h.substring(2, 4), 16),
-        parseInt(h.substring(4, 6), 16)
+        parseInt(h.slice(0, 2), 16),
+        parseInt(h.slice(2, 4), 16),
+        parseInt(h.slice(4, 6), 16)
     ];
 }
 
 function rgba(hex, a) {
     const [r, g, b] = hexToRgb(hex);
-    return `rgba(${r},${g},${b},${a.toFixed(3)})`;
+    return `rgba(${r},${g},${b},${a})`;
 }
 
-function lerp(a, b, t) { return a + (b - a) * t; }
-
-function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
-
-// ─── Palette picker (uses user palette colors + bg) ────────────────────────
-
-function buildInkPalette(colors, bg, rng) {
-    // Shuffle and pick 3–5 of the user's accent colors plus bg
-    const shuffled = [...colors].sort(() => rng() - 0.5);
-    const count = 3 + Math.floor(rng() * (Math.min(colors.length, 3)));
-    return { inks: shuffled.slice(0, count), bg };
+function colorShift(hex, amount) {
+    const [r, g, b] = hexToRgb(hex);
+    const cl = v => Math.max(0, Math.min(255, Math.round(v)));
+    return `rgb(${cl(r + amount)},${cl(g + amount)},${cl(b + amount)})`;
 }
 
-// ─── Flow field ─────────────────────────────────────────────────────────────
+// ─── Catmull-Rom spline interpolation ───────────────────────────────────
 
-function makeFlowField(noise2D, width, height, rng) {
-    const scale   = 0.0008 + rng() * 0.001;    // frequency of field
-    const twist   = (rng() - 0.5) * 8;         // how much it rotates
-    const zOff    = rng() * 100;
-    const bias    = (rng() - 0.5) * Math.PI;   // global directional bias
-    return (x, y) => {
-        const n = noise2D(x * scale + zOff, y * scale + zOff * 1.3);
-        return bias + n * Math.PI * twist;
+function catmullRom(pts, count) {
+    const out = [];
+    const n = pts.length;
+    for (let i = 0; i < count; i++) {
+        const t = i / (count - 1);
+        const sf = t * (n - 1);
+        const s = Math.min(Math.floor(sf), n - 2);
+        const u = sf - s;
+        const u2 = u * u, u3 = u2 * u;
+        const p0 = pts[Math.max(0, s - 1)];
+        const p1 = pts[s];
+        const p2 = pts[Math.min(n - 1, s + 1)];
+        const p3 = pts[Math.min(n - 1, s + 2)];
+        out.push({
+            x: 0.5 * (2*p1.x + (-p0.x+p2.x)*u + (2*p0.x-5*p1.x+4*p2.x-p3.x)*u2 + (-p0.x+3*p1.x-3*p2.x+p3.x)*u3),
+            y: 0.5 * (2*p1.y + (-p0.y+p2.y)*u + (2*p0.y-5*p1.y+4*p2.y-p3.y)*u2 + (-p0.y+3*p1.y-3*p2.y+p3.y)*u3)
+        });
+    }
+    return out;
+}
+
+// ─── Spine generation – enters and exits canvas edges ───────────────────
+
+function makeSpine(W, H, rng, count) {
+    const edgePt = (e) => {
+        const t = 0.15 + rng() * 0.7;
+        if (e === 0) return { x: t * W, y: -H * 0.08 };
+        if (e === 1) return { x: W * 1.08, y: t * H };
+        if (e === 2) return { x: t * W, y: H * 1.08 };
+        return { x: -W * 0.08, y: t * H };
     };
-}
 
-// ─── Bezier path builder along flow field ───────────────────────────────────
+    const entry = Math.floor(rng() * 4);
+    let exit;
+    do { exit = Math.floor(rng() * 4); } while (exit === entry);
 
-function traceStreamline(flowFn, x0, y0, steps, stepLen) {
-    const pts = [{ x: x0, y: y0 }];
-    let x = x0, y = y0;
-    for (let i = 0; i < steps; i++) {
-        const angle = flowFn(x, y);
-        x += Math.cos(angle) * stepLen;
-        y += Math.sin(angle) * stepLen;
-        pts.push({ x, y });
+    const start = edgePt(entry);
+    const end = edgePt(exit);
+    const nWp = 2 + Math.floor(rng() * 2);
+    const wps = [start];
+    for (let i = 0; i < nWp; i++) {
+        const f = (i + 1) / (nWp + 1);
+        wps.push({
+            x: start.x + (end.x - start.x) * f + (rng() - 0.5) * W * 0.5,
+            y: start.y + (end.y - start.y) * f + (rng() - 0.5) * H * 0.5
+        });
     }
-    return pts;
+    wps.push(end);
+    return catmullRom(wps, count);
 }
 
-// Draw a smooth bezier path through points
-function drawSmoothPath(ctx, pts) {
-    if (pts.length < 2) return;
+// ─── Compute normals along spine ────────────────────────────────────────
+
+function computeNormals(spine) {
+    return spine.map((p, i, a) => {
+        let dx, dy;
+        if (i === 0) { dx = a[1].x - p.x; dy = a[1].y - p.y; }
+        else if (i === a.length - 1) { dx = p.x - a[i - 1].x; dy = p.y - a[i - 1].y; }
+        else { dx = a[i + 1].x - a[i - 1].x; dy = a[i + 1].y - a[i - 1].y; }
+        const len = Math.hypot(dx, dy) || 1;
+        return { x: -dy / len, y: dx / len };
+    });
+}
+
+// ─── Trace ribbon outline as current path ───────────────────────────────
+
+function traceOutline(ctx, left, right) {
     ctx.beginPath();
-    ctx.moveTo(pts[0].x, pts[0].y);
-    for (let i = 1; i < pts.length - 1; i++) {
-        const mx = (pts[i].x + pts[i + 1].x) * 0.5;
-        const my = (pts[i].y + pts[i + 1].y) * 0.5;
-        ctx.quadraticCurveTo(pts[i].x, pts[i].y, mx, my);
+    ctx.moveTo(left[0].x, left[0].y);
+    for (let i = 1; i < left.length; i++) ctx.lineTo(left[i].x, left[i].y);
+    for (let i = right.length - 1; i >= 0; i--) ctx.lineTo(right[i].x, right[i].y);
+    ctx.closePath();
+}
+
+// ─── Draw a single paint ribbon onto an offscreen buffer ────────────────
+
+function drawRibbon(mainCtx, bufCtx, W, H, spine, norms, rcols, baseW, noise, noise2, rng) {
+    const N = spine.length;
+
+    // Edge distortion parameters (pre-compute so edges are deterministic)
+    const nScale = 0.003 + rng() * 0.004;
+    const nStr   = 0.2 + rng() * 0.35;
+    const sL     = rng() * 100;
+    const sR     = rng() * 100;
+
+    // Build left/right edges with noise distortion and smooth taper
+    const left = [], right = [], hws = [];
+    for (let i = 0; i < N; i++) {
+        const t = i / (N - 1);
+        const taper = Math.min(1, t * 4.5) * Math.min(1, (1 - t) * 4.5);
+        const ts = taper * taper * (3 - 2 * taper); // smoothstep
+        const wVar = 0.8 + noise(i * 0.02 + sL * 2, 0) * 0.4;
+        const hw = baseW * ts * wVar * 0.5;
+
+        const eL = noise(spine[i].x * nScale + sL, spine[i].y * nScale) * nStr * hw;
+        const eR = noise(spine[i].x * nScale + sR, spine[i].y * nScale + 200) * nStr * hw;
+
+        left.push({ x: spine[i].x + norms[i].x * (hw + eL), y: spine[i].y + norms[i].y * (hw + eL) });
+        right.push({ x: spine[i].x - norms[i].x * (hw + eR), y: spine[i].y - norms[i].y * (hw + eR) });
+        hws.push(hw);
     }
-    ctx.lineTo(pts[pts.length - 1].x, pts[pts.length - 1].y);
-}
 
-// ─── Offscreen canvas helper ─────────────────────────────────────────────────
+    // Clear buffer for this ribbon
+    bufCtx.clearRect(0, 0, W, H);
 
-function makeOffscreen(width, height) {
-    const c = document.createElement('canvas');
-    c.width = width;
-    c.height = height;
-    return { canvas: c, ctx: c.getContext('2d') };
-}
-
-// ─── Layer 1 – Background with subtle texture ───────────────────────────────
-
-function drawBackground(ctx, width, height, bg, rng) {
-    ctx.fillStyle = bg;
-    ctx.fillRect(0, 0, width, height);
-
-    // Very faint noise grain over bg for paint thickness feel
-    const imageData = ctx.getImageData(0, 0, width, height);
-    const d = imageData.data;
-    const [br, bg2, bb] = hexToRgb(bg);
-    // Only sample a fraction of pixels for speed
-    for (let i = 0; i < d.length; i += 16) {
-        const noise = (rng() - 0.5) * 18;
-        d[i]     = clamp(br + noise, 0, 255);
-        d[i + 1] = clamp(bg2 + noise, 0, 255);
-        d[i + 2] = clamp(bb + noise, 0, 255);
-    }
-    ctx.putImageData(imageData, 0, 0);
-}
-
-// ─── Layer 2 – Major liquid bodies ──────────────────────────────────────────
-
-function drawLiquidBodies(oCtx, width, height, palette, flowFn, rng) {
-    const { inks } = palette;
-    const numBodies = 2 + Math.floor(rng() * 3); // 2–4
-
-    // Entry sides: top, bottom, left, right, diagonal
-    const entries = [
-        () => ({ x: rng() * width, y: -height * 0.05 }),
-        () => ({ x: rng() * width, y: height * 1.05 }),
-        () => ({ x: -width * 0.05, y: rng() * height }),
-        () => ({ x: width * 1.05, y: rng() * height }),
-    ];
-
-    for (let b = 0; b < numBodies; b++) {
-        const ink = inks[b % inks.length];
-        const start = entries[Math.floor(rng() * entries.length)]();
-        const steps = 120 + Math.floor(rng() * 80);
-        const stepLen = (width + height) * 0.005;
-
-        const pts = traceStreamline(flowFn, start.x, start.y, steps, stepLen);
-        const ribbonWidth = (0.08 + rng() * 0.18) * Math.min(width, height);
-
-        // Draw fat ribbon with gradient across its width
-        oCtx.save();
-        oCtx.globalCompositeOperation = 'source-over';
-        oCtx.globalAlpha = 0.55 + rng() * 0.3;
-
-        drawSmoothPath(oCtx, pts);
-
-        oCtx.lineWidth = ribbonWidth;
-        oCtx.lineCap = 'round';
-        oCtx.lineJoin = 'round';
-        oCtx.strokeStyle = ink;
-        oCtx.stroke();
-
-        // Soft feathered edge – draw wider and more transparent
-        drawSmoothPath(oCtx, pts);
-        oCtx.lineWidth = ribbonWidth * 1.6;
-        oCtx.globalAlpha = 0.08 + rng() * 0.1;
-        oCtx.strokeStyle = ink;
-        oCtx.stroke();
-
-        oCtx.restore();
-    }
-}
-
-// ─── Layer 3 – Secondary flowing tendrils ───────────────────────────────────
-
-function drawTendrils(oCtx, width, height, palette, flowFn, rng) {
-    const { inks } = palette;
-    const count = 8 + Math.floor(rng() * 12);
-
-    for (let i = 0; i < count; i++) {
-        const ink = inks[Math.floor(rng() * inks.length)];
-        const x0 = rng() * width * 1.2 - width * 0.1;
-        const y0 = rng() * height * 1.2 - height * 0.1;
-        const steps = 60 + Math.floor(rng() * 80);
-        const stepLen = (width + height) * 0.003;
-        const pts = traceStreamline(flowFn, x0, y0, steps, stepLen);
-        const lw = (0.005 + rng() * 0.025) * Math.min(width, height);
-
-        oCtx.save();
-        oCtx.globalAlpha = 0.3 + rng() * 0.45;
-        oCtx.globalCompositeOperation = rng() > 0.7 ? 'screen' : 'source-over';
-        drawSmoothPath(oCtx, pts);
-        oCtx.lineWidth = lw;
-        oCtx.lineCap = 'round';
-        oCtx.strokeStyle = ink;
-        oCtx.stroke();
-
-        // Feather
-        if (rng() > 0.5) {
-            drawSmoothPath(oCtx, pts);
-            oCtx.lineWidth = lw * 2.5;
-            oCtx.globalAlpha *= 0.15;
-            oCtx.stroke();
+    // ── A. Feathered glow – multiple slightly-wider fills at low opacity ──
+    for (let g = 3; g >= 1; g--) {
+        const sc = 1 + g * 0.12;
+        bufCtx.save();
+        bufCtx.globalAlpha = 0.04;
+        bufCtx.fillStyle = rcols[0];
+        const gl = [], gr = [];
+        for (let i = 0; i < N; i++) {
+            const cx = (left[i].x + right[i].x) * 0.5;
+            const cy = (left[i].y + right[i].y) * 0.5;
+            gl.push({ x: cx + (left[i].x - cx) * sc, y: cy + (left[i].y - cy) * sc });
+            gr.push({ x: cx + (right[i].x - cx) * sc, y: cy + (right[i].y - cy) * sc });
         }
-        oCtx.restore();
+        traceOutline(bufCtx, gl, gr);
+        bufCtx.fill();
+        bufCtx.restore();
     }
-}
 
-// ─── Layer 4 – Paint cells (alcohol ink characteristic) ─────────────────────
+    // ── B. Base ribbon fill ──
+    bufCtx.save();
+    bufCtx.globalAlpha = 0.65 + rng() * 0.25;
+    bufCtx.fillStyle = rcols[0];
+    traceOutline(bufCtx, left, right);
+    bufCtx.fill();
+    bufCtx.restore();
 
-function drawCells(oCtx, width, height, palette, flowFn, noise2D, rng) {
-    const { inks, bg } = palette;
-    const cellCount = 18 + Math.floor(rng() * 22);
-    const zOff = rng() * 50;
+    // ── C. Marbling bands – many parallel strokes following the spine ──
+    //    Each band is offset perpendicular to the spine and drawn as a
+    //    wide, semi-transparent stroke. Overlapping bands create the
+    //    characteristic pigment-mixing look of real acrylic pour art.
+    bufCtx.save();
+    traceOutline(bufCtx, left, right);
+    bufCtx.clip();
 
-    for (let i = 0; i < cellCount; i++) {
-        const x = rng() * width;
-        const y = rng() * height;
-        const n = noise2D(x * 0.002 + zOff, y * 0.002 + zOff * 1.7);
-        if (n < -0.2) continue; // Skip dark negative space areas
+    const numBands = 30 + Math.floor(rng() * 25);
+    for (let b = 0; b < numBands; b++) {
+        const perp   = (rng() * 2 - 1) * 0.95; // position across width
+        const col    = rcols[Math.floor(rng() * rcols.length)];
+        const alpha  = 0.06 + rng() * 0.28;
+        const bFreq  = 0.001 + rng() * 0.003;
+        const bAmp   = 0.15 + rng() * 0.45;
+        const lw     = (0.04 + rng() * 0.18) * baseW;
 
-        const cellInk = rng() > 0.3
-            ? inks[Math.floor(rng() * inks.length)]
-            : bg;
-
-        const baseR = (0.02 + rng() * 0.07) * Math.min(width, height);
-        // Stretch cell along flow direction
-        const angle = flowFn(x, y);
-        const stretch = 1.5 + rng() * 3;
-
-        oCtx.save();
-        oCtx.translate(x, y);
-        oCtx.rotate(angle);
-        oCtx.scale(stretch, 1);
-
-        // Organic cell shape via multiple overlapping ellipses
-        const numLobes = 3 + Math.floor(rng() * 4);
-        oCtx.globalAlpha = 0.25 + rng() * 0.45;
-        oCtx.globalCompositeOperation = rng() > 0.6 ? 'overlay' : 'source-over';
-
-        for (let l = 0; l < numLobes; l++) {
-            const offX = (rng() - 0.5) * baseR * 0.8;
-            const offY = (rng() - 0.5) * baseR * 0.4;
-            const r = baseR * (0.4 + rng() * 0.7);
-            const grad = oCtx.createRadialGradient(offX, offY, 0, offX, offY, r);
-            grad.addColorStop(0, rgba(cellInk, 0.9));
-            grad.addColorStop(0.6, rgba(cellInk, 0.4));
-            grad.addColorStop(1, rgba(cellInk, 0));
-            oCtx.fillStyle = grad;
-            oCtx.beginPath();
-            oCtx.ellipse(offX, offY, r, r * 0.6, rng() * Math.PI, 0, Math.PI * 2);
-            oCtx.fill();
+        bufCtx.beginPath();
+        for (let i = 0; i < N; i += 3) {
+            const hw = hws[i];
+            const bn = noise2(spine[i].x * bFreq + b * 7.3, spine[i].y * bFreq + b * 13.7) * bAmp;
+            const d = (perp + bn) * hw;
+            const x = spine[i].x + norms[i].x * d;
+            const y = spine[i].y + norms[i].y * d;
+            if (i === 0) bufCtx.moveTo(x, y);
+            else bufCtx.lineTo(x, y);
         }
+        bufCtx.globalAlpha = alpha;
+        bufCtx.strokeStyle = col;
+        bufCtx.lineWidth = lw;
+        bufCtx.lineCap = 'round';
+        bufCtx.stroke();
+    }
+    bufCtx.restore();
 
-        // Cell edge outline (thin dark/light line at boundary)
-        if (rng() > 0.5) {
-            oCtx.globalAlpha = 0.12 + rng() * 0.2;
-            oCtx.globalCompositeOperation = 'source-over';
-            oCtx.strokeStyle = rng() > 0.5 ? rgba(bg, 1) : rgba(cellInk, 1);
-            oCtx.lineWidth = baseR * 0.04;
-            oCtx.beginPath();
-            oCtx.ellipse(0, 0, baseR * stretch * 0.9, baseR * 0.5, 0, 0, Math.PI * 2);
-            oCtx.stroke();
+    // ── D. Paint cells – dark voids where background shows through ──
+    //    Cells are clustered, organic, stretched along the flow direction.
+    //    Rendered via destination-out to punch transparent holes in the ribbon.
+    bufCtx.save();
+    bufCtx.globalCompositeOperation = 'destination-out';
+
+    const numClusters = 2 + Math.floor(rng() * 4);
+    for (let cl = 0; cl < numClusters; cl++) {
+        const si = Math.floor(rng() * N * 0.6 + N * 0.2);
+        const hw = hws[si];
+        if (hw < 5) continue;
+
+        const cX = spine[si].x + norms[si].x * (rng() * 2 - 1) * hw * 0.5;
+        const cY = spine[si].y + norms[si].y * (rng() * 2 - 1) * hw * 0.5;
+        const cR = hw * (0.4 + rng() * 1.0);
+        const nc = 3 + Math.floor(rng() * 8);
+
+        // Flow angle for stretching cells along paint direction
+        const fAngle = Math.atan2(
+            spine[Math.min(si + 5, N - 1)].y - spine[si].y,
+            spine[Math.min(si + 5, N - 1)].x - spine[si].x
+        );
+
+        for (let c = 0; c < nc; c++) {
+            const cx = cX + (rng() - 0.5) * cR;
+            const cy = cY + (rng() - 0.5) * cR * 0.5;
+            const cr = cR * (0.04 + rng() * 0.16);
+            const stretch = 1.2 + rng() * 1.5;
+
+            bufCtx.save();
+            bufCtx.globalAlpha = 0.35 + rng() * 0.55;
+            bufCtx.translate(cx, cy);
+            bufCtx.rotate(fAngle + (rng() - 0.5) * 0.3);
+            bufCtx.scale(stretch, 1);
+
+            const grad = bufCtx.createRadialGradient(0, 0, cr * 0.15, 0, 0, cr);
+            grad.addColorStop(0, 'rgba(0,0,0,1)');
+            grad.addColorStop(0.6, 'rgba(0,0,0,0.7)');
+            grad.addColorStop(1, 'rgba(0,0,0,0)');
+            bufCtx.fillStyle = grad;
+            bufCtx.beginPath();
+            bufCtx.arc(0, 0, cr, 0, Math.PI * 2);
+            bufCtx.fill();
+
+            // Satellite lobes for organic irregularity
+            const nLobes = Math.floor(rng() * 3);
+            for (let l = 0; l < nLobes; l++) {
+                const lx = (rng() - 0.5) * cr * 1.5;
+                const ly = (rng() - 0.5) * cr * 0.8;
+                const lr = cr * (0.2 + rng() * 0.4);
+                const lg = bufCtx.createRadialGradient(lx, ly, lr * 0.1, lx, ly, lr);
+                lg.addColorStop(0, 'rgba(0,0,0,0.8)');
+                lg.addColorStop(1, 'rgba(0,0,0,0)');
+                bufCtx.fillStyle = lg;
+                bufCtx.beginPath();
+                bufCtx.arc(lx, ly, lr, 0, Math.PI * 2);
+                bufCtx.fill();
+            }
+            bufCtx.restore();
         }
-
-        oCtx.restore();
     }
+    bufCtx.restore();
+
+    // ── E. Edge threads – thin paint tendrils extending from ribbon edges ──
+    const threadCount = 6 + Math.floor(rng() * 10);
+    for (let t = 0; t < threadCount; t++) {
+        const si = Math.floor(rng() * N * 0.7 + N * 0.15);
+        const hw = hws[si];
+        if (hw < 3) continue;
+        const side = rng() > 0.5 ? 1 : -1;
+        const sx = side > 0 ? left[si].x : right[si].x;
+        const sy = side > 0 ? left[si].y : right[si].y;
+        const len = hw * (0.3 + rng() * 1.5);
+        const ang = Math.atan2(norms[si].y, norms[si].x) * side + (rng() - 0.5) * 0.5;
+
+        bufCtx.save();
+        bufCtx.globalAlpha = 0.1 + rng() * 0.3;
+        bufCtx.strokeStyle = rcols[Math.floor(rng() * rcols.length)];
+        bufCtx.lineWidth = Math.max(0.5, hw * 0.008 + rng() * hw * 0.015);
+        bufCtx.lineCap = 'round';
+        bufCtx.beginPath();
+        bufCtx.moveTo(sx, sy);
+        bufCtx.quadraticCurveTo(
+            sx + Math.cos(ang) * len * 0.5 + (rng() - 0.5) * len * 0.3,
+            sy + Math.sin(ang) * len * 0.5 + (rng() - 0.5) * len * 0.3,
+            sx + Math.cos(ang) * len,
+            sy + Math.sin(ang) * len
+        );
+        bufCtx.stroke();
+        bufCtx.restore();
+    }
+
+    // ── F. Tiny specular bubbles inside paint ──
+    bufCtx.save();
+    traceOutline(bufCtx, left, right);
+    bufCtx.clip();
+
+    const bubCount = 12 + Math.floor(rng() * 20);
+    for (let b = 0; b < bubCount; b++) {
+        const si = Math.floor(rng() * N);
+        const hw = hws[si];
+        if (hw < 3) continue;
+        const d = (rng() * 2 - 1) * hw * 0.8;
+        const bx = spine[si].x + norms[si].x * d;
+        const by = spine[si].y + norms[si].y * d;
+        const br = Math.max(0.5, hw * (0.003 + rng() * rng() * 0.012));
+
+        bufCtx.globalAlpha = 0.15 + rng() * 0.35;
+        const bGrad = bufCtx.createRadialGradient(bx, by, 0, bx, by, br);
+        bGrad.addColorStop(0, 'rgba(255,255,255,0.7)');
+        bGrad.addColorStop(0.5, 'rgba(255,255,255,0.15)');
+        bGrad.addColorStop(1, 'rgba(255,255,255,0)');
+        bufCtx.fillStyle = bGrad;
+        bufCtx.beginPath();
+        bufCtx.arc(bx, by, br, 0, Math.PI * 2);
+        bufCtx.fill();
+    }
+    bufCtx.restore();
+
+    // Composite this ribbon onto the main canvas
+    mainCtx.drawImage(bufCtx.canvas, 0, 0);
 }
 
-// ─── Layer 5 – Fine marbling veins ──────────────────────────────────────────
+// ─── Scattered edge droplets ────────────────────────────────────────────
 
-function drawMarblingVeins(oCtx, width, height, palette, flowFn, rng) {
-    const { inks, bg } = palette;
-    const veinCount = 12 + Math.floor(rng() * 16);
-
-    for (let i = 0; i < veinCount; i++) {
-        const ink = rng() > 0.2 ? inks[Math.floor(rng() * inks.length)] : bg;
-        const x0 = rng() * width;
-        const y0 = rng() * height;
-        const steps = 40 + Math.floor(rng() * 60);
-        const stepLen = (width + height) * 0.002;
-        const pts = traceStreamline(flowFn, x0, y0, steps, stepLen);
-
-        oCtx.save();
-        oCtx.globalAlpha = 0.12 + rng() * 0.25;
-        oCtx.globalCompositeOperation = 'source-over';
-        drawSmoothPath(oCtx, pts);
-        oCtx.lineWidth = Math.max(0.5, (0.001 + rng() * 0.004) * Math.min(width, height));
-        oCtx.lineCap = 'round';
-        oCtx.strokeStyle = ink;
-        oCtx.stroke();
-        oCtx.restore();
-    }
-}
-
-// ─── Layer 6 – Bubbles ──────────────────────────────────────────────────────
-
-function drawBubbles(oCtx, width, height, palette, rng) {
-    const { inks, bg } = palette;
-    const count = 40 + Math.floor(rng() * 60);
-
+function drawDroplets(ctx, W, H, palette, rng) {
+    const count = 25 + Math.floor(rng() * 35);
     for (let i = 0; i < count; i++) {
-        const x = rng() * width;
-        const y = rng() * height;
-        const r = (0.002 + rng() * rng() * 0.015) * Math.min(width, height);
-        const ink = rng() > 0.3 ? inks[Math.floor(rng() * inks.length)] : bg;
-
-        oCtx.save();
-        oCtx.globalAlpha = 0.15 + rng() * 0.45;
-
-        // Bubble fill
-        const grad = oCtx.createRadialGradient(x - r * 0.3, y - r * 0.3, 0, x, y, r);
-        grad.addColorStop(0, rgba(ink, 0.5));
-        grad.addColorStop(0.7, rgba(ink, 0.1));
-        grad.addColorStop(1, rgba(ink, 0));
-        oCtx.fillStyle = grad;
-        oCtx.beginPath();
-        oCtx.arc(x, y, r, 0, Math.PI * 2);
-        oCtx.fill();
-
-        // Specular highlight
-        if (rng() > 0.4) {
-            oCtx.globalAlpha = 0.4 + rng() * 0.4;
-            const hx = x - r * 0.35;
-            const hy = y - r * 0.35;
-            const hr = r * 0.25;
-            const hgrad = oCtx.createRadialGradient(hx, hy, 0, hx, hy, hr);
-            hgrad.addColorStop(0, 'rgba(255,255,255,0.8)');
-            hgrad.addColorStop(1, 'rgba(255,255,255,0)');
-            oCtx.fillStyle = hgrad;
-            oCtx.beginPath();
-            oCtx.arc(hx, hy, hr, 0, Math.PI * 2);
-            oCtx.fill();
-        }
-
-        oCtx.restore();
+        const col = palette[Math.floor(rng() * palette.length)];
+        const x = rng() * W;
+        const y = rng() * H;
+        const r = Math.max(0.5, (0.3 + rng() * rng() * 2) * Math.min(W, H) / 1000);
+        ctx.save();
+        ctx.globalAlpha = 0.25 + rng() * 0.55;
+        ctx.fillStyle = col;
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
     }
 }
 
-// ─── Layer 7 – Edge droplets ─────────────────────────────────────────────────
+// ─── Subtle specular highlights ─────────────────────────────────────────
 
-function drawDroplets(oCtx, width, height, palette, flowFn, rng) {
-    const { inks } = palette;
-    const count = 20 + Math.floor(rng() * 30);
-
+function drawHighlights(ctx, W, H, rng) {
+    const count = 2 + Math.floor(rng() * 4);
     for (let i = 0; i < count; i++) {
-        const ink = inks[Math.floor(rng() * inks.length)];
-        const x = rng() * width;
-        const y = rng() * height;
-        const r = (0.001 + rng() * rng() * 0.007) * Math.min(width, height);
-        const angle = flowFn(x, y);
-        const tailLen = r * (2 + rng() * 5);
-
-        oCtx.save();
-        oCtx.globalAlpha = 0.3 + rng() * 0.5;
-        oCtx.translate(x, y);
-        oCtx.rotate(angle + Math.PI);
-
-        // Teardrop body
-        oCtx.fillStyle = ink;
-        oCtx.beginPath();
-        oCtx.arc(0, 0, r, 0, Math.PI * 2);
-        oCtx.fill();
-
-        // Thin tail
-        const grad = oCtx.createLinearGradient(0, 0, tailLen, 0);
-        grad.addColorStop(0, rgba(ink, 0.6));
-        grad.addColorStop(1, rgba(ink, 0));
-        oCtx.strokeStyle = grad;
-        oCtx.lineWidth = r * 0.4;
-        oCtx.lineCap = 'round';
-        oCtx.beginPath();
-        oCtx.moveTo(0, 0);
-        oCtx.lineTo(tailLen, 0);
-        oCtx.stroke();
-
-        oCtx.restore();
+        const x = rng() * W;
+        const y = rng() * H;
+        const r = (0.01 + rng() * 0.03) * Math.min(W, H);
+        ctx.save();
+        ctx.globalAlpha = 0.015 + rng() * 0.035;
+        ctx.globalCompositeOperation = 'screen';
+        const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+        g.addColorStop(0, 'rgba(255,255,255,1)');
+        g.addColorStop(0.4, 'rgba(255,255,255,0.3)');
+        g.addColorStop(1, 'rgba(255,255,255,0)');
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
     }
 }
 
-// ─── Layer 8 – Highlights / glossy sheen ────────────────────────────────────
-
-function drawHighlights(oCtx, width, height, rng) {
-    const count = 3 + Math.floor(rng() * 4);
-    for (let i = 0; i < count; i++) {
-        const x = rng() * width;
-        const y = rng() * height;
-        const rx = (0.05 + rng() * 0.2) * width;
-        const ry = (0.02 + rng() * 0.08) * height;
-        const angle = rng() * Math.PI;
-
-        oCtx.save();
-        oCtx.translate(x, y);
-        oCtx.rotate(angle);
-        oCtx.globalAlpha = 0.03 + rng() * 0.06;
-        oCtx.globalCompositeOperation = 'screen';
-
-        const grad = oCtx.createRadialGradient(0, 0, 0, 0, 0, Math.max(rx, ry));
-        grad.addColorStop(0, 'rgba(255,255,255,1)');
-        grad.addColorStop(0.5, 'rgba(255,255,255,0.2)');
-        grad.addColorStop(1, 'rgba(255,255,255,0)');
-        oCtx.fillStyle = grad;
-
-        oCtx.beginPath();
-        oCtx.ellipse(0, 0, rx, ry, 0, 0, Math.PI * 2);
-        oCtx.fill();
-        oCtx.restore();
-    }
-}
-
-// ─── Layer 9 – Micro noise grain ────────────────────────────────────────────
-
-function drawGrain(oCtx, width, height, rng) {
-    // Draw sparse scattered noise dots very efficiently
-    oCtx.save();
-    oCtx.globalAlpha = 0.025;
-    oCtx.globalCompositeOperation = 'overlay';
-    oCtx.fillStyle = '#ffffff';
-
-    const count = Math.floor(width * height * 0.003);
-    for (let i = 0; i < count; i++) {
-        const x = rng() * width;
-        const y = rng() * height;
-        const r = rng() * 0.8 + 0.2;
-        oCtx.beginPath();
-        oCtx.arc(x, y, r, 0, Math.PI * 2);
-        oCtx.fill();
-    }
-    oCtx.restore();
-}
-
-// ─── Main export ─────────────────────────────────────────────────────────────
+// ─── Main export ────────────────────────────────────────────────────────
 
 export function drawFluidInk(ctx, width, height, colors, rng) {
-    const noise2D = createNoise2D(rng);
-    const noise2D2 = createNoise2D(rng);
+    const noise  = createNoise2D(rng);
+    const noise2 = createNoise2D(rng);
 
-    const palette = buildInkPalette(colors.colors, colors.bg, rng);
+    // Pure background (works best with dark/black)
+    ctx.fillStyle = colors.bg;
+    ctx.fillRect(0, 0, width, height);
 
-    // Create two flow fields with slight variance for rich turbulence
-    const flow1 = makeFlowField(noise2D, width, height, rng);
-    const flow2 = makeFlowField(noise2D2, width, height, rng);
-    // Blend them
-    const blendFlow = (x, y) => {
-        const t = 0.35 + rng() * 0.3;
-        return lerp(flow1(x, y), flow2(x, y), t);
-    };
+    // Shuffle user palette for variety
+    const palette = [...colors.colors].sort(() => rng() - 0.5);
+    const numRibbons = 2 + Math.floor(rng() * 2); // 2–3 major paint bodies
+    const spineSamples = 200;
 
-    // Work on offscreen canvas so we can composite layers cleanly
-    const { canvas: off, ctx: oCtx } = makeOffscreen(width, height);
+    // Single reusable offscreen buffer (one per ribbon, cleared each time)
+    const buf = document.createElement('canvas');
+    buf.width = width;
+    buf.height = height;
+    const bufCtx = buf.getContext('2d');
 
-    // Layer 0: background
-    drawBackground(oCtx, width, height, palette.bg, rng);
+    for (let r = 0; r < numRibbons; r++) {
+        const spine = makeSpine(width, height, rng, spineSamples);
+        const norms = computeNormals(spine);
 
-    // Layer 1: major liquid bodies
-    drawLiquidBodies(oCtx, width, height, palette, blendFlow, rng);
+        // Assign 3–5 related color shades to this ribbon
+        const base = palette[r % palette.length];
+        const rcols = [base];
+        const nc = 1 + Math.floor(rng() * Math.min(2, palette.length - 1));
+        for (let c = 0; c < nc; c++) {
+            rcols.push(palette[(r + c + 1) % palette.length]);
+        }
+        rcols.push(colorShift(base, 30));  // lighter variant
+        rcols.push(colorShift(base, -25)); // darker variant
 
-    // Soft blur between layers (paint spreading)
-    if (width <= 2000) {
-        // Only blur for preview — skip for 4K exports to stay within time budget
-        oCtx.filter = `blur(${Math.min(width, height) * 0.006}px)`;
-        const snap = makeOffscreen(width, height);
-        snap.ctx.drawImage(off, 0, 0);
-        oCtx.filter = 'none';
-        oCtx.clearRect(0, 0, width, height);
-        oCtx.drawImage(snap.canvas, 0, 0);
+        const baseW = (0.06 + rng() * 0.14) * Math.min(width, height);
+        drawRibbon(ctx, bufCtx, width, height, spine, norms, rcols, baseW, noise, noise2, rng);
     }
 
-    // Layer 2: secondary tendrils
-    drawTendrils(oCtx, width, height, palette, blendFlow, rng);
+    // Scattered micro droplets
+    drawDroplets(ctx, width, height, palette, rng);
 
-    // Layer 3: paint cells
-    drawCells(oCtx, width, height, palette, blendFlow, noise2D, rng);
-
-    // Layer 4: marbling veins
-    drawMarblingVeins(oCtx, width, height, palette, blendFlow, rng);
-
-    // Layer 5: bubbles
-    drawBubbles(oCtx, width, height, palette, rng);
-
-    // Layer 6: droplets with tails
-    drawDroplets(oCtx, width, height, palette, blendFlow, rng);
-
-    // Layer 7: glossy highlights
-    drawHighlights(oCtx, width, height, rng);
-
-    // Layer 8: micro grain
-    drawGrain(oCtx, width, height, rng);
-
-    // Blit to main canvas
-    ctx.drawImage(off, 0, 0);
+    // Gentle glossy highlights
+    drawHighlights(ctx, width, height, rng);
 }
