@@ -128,8 +128,7 @@ function getIconForTheme(theme) {
         gridGlitch: 'binary',
         flowField: 'wind',
         orbitals: 'aperture',
-        shapes: 'shapes',
-        fluidInk: 'droplet'
+        shapes: 'shapes'
     };
     return icons[theme] || 'image';
 }
