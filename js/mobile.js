@@ -14,6 +14,7 @@ import { drawGridGlitch } from './generators/gridGlitch.js';
 import { drawFlowField } from './generators/flowField.js';
 import { drawOrbitals } from './generators/orbitals.js';
 import { generate as drawShapes } from './generators/shapes.js';
+import { drawFluidArt } from './generators/fluidArt.js';
 import { store, renderSavedModal } from './store.js';
 import { generateRandomPalette } from './colorUtils.js';
 
@@ -30,7 +31,8 @@ const generators = {
     gridGlitch: drawGridGlitch,
     flowField: drawFlowField,
     orbitals: drawOrbitals,
-    shapes: drawShapes
+    shapes: drawShapes,
+    fluidArt: drawFluidArt
 };
 
 // ----- Elements -----
@@ -212,7 +214,8 @@ const state = {
     themeOptions: {
         particles: { num: 150 },
         waveInterference: { num: 3, amp: 100, thick: 2 },
-        shapes: { squares: 20, triangles: 20, circles: 50, size: 100, thick: 2, fill: false, connect: false }
+        shapes: { squares: 20, triangles: 20, circles: 50, size: 100, thick: 2, fill: false, connect: false },
+        fluidArt: { density: 50, turbulence: 50, cells: 50 }
     }
 };
 
@@ -225,7 +228,8 @@ try {
             state.themeOptions = {
                 particles: { ...state.themeOptions.particles, ...parsed.themeOptions.particles },
                 waveInterference: { ...state.themeOptions.waveInterference, ...parsed.themeOptions.waveInterference },
-                shapes: { ...state.themeOptions.shapes, ...parsed.themeOptions.shapes }
+                shapes: { ...state.themeOptions.shapes, ...parsed.themeOptions.shapes },
+                fluidArt: { ...state.themeOptions.fluidArt, ...parsed.themeOptions.fluidArt }
             };
         }
     }
@@ -253,19 +257,19 @@ function updateUI() {
         btn.classList.toggle('active', btn.dataset.palette === state.palette);
     });
 
-    const themeOptsContainer = document.getElementById('mobile-theme-options-container');
-    const particlesOpts = document.getElementById('mobile-particles-options');
-    const waveOpts = document.getElementById('mobile-wave-options');
-    const shapesOpts = document.getElementById('mobile-shapes-options');
-    
-    if (themeOptsContainer) {
+    const mobileThemeOptsContainer = document.getElementById('mobile-theme-options-container');
+    const mobileParticlesOpts = document.getElementById('mobile-particles-options');
+    const mobileWaveOpts = document.getElementById('mobile-wave-options');
+    const mobileShapesOpts = document.getElementById('mobile-shapes-options');
+        
+    if (mobileThemeOptsContainer) {
         if (state.theme === 'particles' || state.theme === 'waveInterference' || state.theme === 'shapes') {
-            themeOptsContainer.style.display = 'block';
-            if (particlesOpts) particlesOpts.classList.toggle('hidden', state.theme !== 'particles');
-            if (waveOpts) waveOpts.classList.toggle('hidden', state.theme !== 'waveInterference');
-            if (shapesOpts) shapesOpts.classList.toggle('hidden', state.theme !== 'shapes');
+            mobileThemeOptsContainer.style.display = 'block';
+            if (mobileParticlesOpts) mobileParticlesOpts.classList.toggle('hidden', state.theme !== 'particles');
+            if (mobileWaveOpts) mobileWaveOpts.classList.toggle('hidden', state.theme !== 'waveInterference');
+            if (mobileShapesOpts) mobileShapesOpts.classList.toggle('hidden', state.theme !== 'shapes');
         } else {
-            themeOptsContainer.style.display = 'none';
+            mobileThemeOptsContainer.style.display = 'none';
         }
     }
 

@@ -14,6 +14,7 @@ import { drawGridGlitch } from './generators/gridGlitch.js';
 import { drawFlowField } from './generators/flowField.js';
 import { drawOrbitals } from './generators/orbitals.js';
 import { generate as drawShapes } from './generators/shapes.js';
+import { drawFluidArt } from './generators/fluidArt.js';
 import { store, renderSavedModal } from './store.js';
 import { generateRandomPalette } from './colorUtils.js';
 
@@ -30,7 +31,8 @@ const generators = {
     gridGlitch: drawGridGlitch,
     flowField: drawFlowField,
     orbitals: drawOrbitals,
-    shapes: drawShapes
+    shapes: drawShapes,
+    fluidArt: drawFluidArt
 };
 
 let state = {
@@ -49,7 +51,8 @@ let state = {
     themeOptions: {
         particles: { num: 150 },
         waveInterference: { num: 3, amp: 100, thick: 2 },
-        shapes: { squares: 20, triangles: 20, circles: 50, size: 100, thick: 2, fill: false, connect: false }
+        shapes: { squares: 20, triangles: 20, circles: 50, size: 100, thick: 2, fill: false, connect: false },
+        fluidArt: { density: 50, turbulence: 50, cells: 50 }
     }
 };
 
@@ -62,7 +65,8 @@ try {
             state.themeOptions = {
                 particles: { ...state.themeOptions.particles, ...parsed.themeOptions.particles },
                 waveInterference: { ...state.themeOptions.waveInterference, ...parsed.themeOptions.waveInterference },
-                shapes: { ...state.themeOptions.shapes, ...parsed.themeOptions.shapes }
+                shapes: { ...state.themeOptions.shapes, ...parsed.themeOptions.shapes },
+                fluidArt: { ...state.themeOptions.fluidArt, ...parsed.themeOptions.fluidArt }
             };
         }
     }
