@@ -14,6 +14,7 @@ import { drawGridGlitch } from './generators/gridGlitch.js';
 import { drawFlowField } from './generators/flowField.js';
 import { drawOrbitals } from './generators/orbitals.js';
 import { generate as drawShapes } from './generators/shapes.js';
+import { drawFluidInk } from './generators/fluidInk.js';
 import { store, renderSavedModal } from './store.js';
 import { generateRandomPalette } from './colorUtils.js';
 
@@ -30,7 +31,8 @@ const generators = {
     gridGlitch: drawGridGlitch,
     flowField: drawFlowField,
     orbitals: drawOrbitals,
-    shapes: drawShapes
+    shapes: drawShapes,
+    fluidInk: drawFluidInk
 };
 
 let state = {
