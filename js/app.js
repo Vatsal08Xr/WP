@@ -191,6 +191,7 @@ document.addEventListener('DOMContentLoaded', () => {
             el.addEventListener('input', (e) => {
                 valEl.textContent = e.target.value;
                 state.themeOptions[theme][key] = isFloat ? parseFloat(e.target.value) : parseInt(e.target.value);
+                state.interactiveObjects[theme] = {};
                 triggerUpdate();
             });
         }
@@ -211,6 +212,7 @@ document.addEventListener('DOMContentLoaded', () => {
         shapesFillToggle.checked = state.themeOptions.shapes.fill;
         shapesFillToggle.addEventListener('change', (e) => {
             state.themeOptions.shapes.fill = e.target.checked;
+            state.interactiveObjects['shapes'] = {};
             triggerUpdate();
         });
     }
@@ -220,6 +222,7 @@ document.addEventListener('DOMContentLoaded', () => {
         shapesConnectToggle.checked = state.themeOptions.shapes.connect;
         shapesConnectToggle.addEventListener('change', (e) => {
             state.themeOptions.shapes.connect = e.target.checked;
+            state.interactiveObjects['shapes'] = {};
             triggerUpdate();
         });
     }
@@ -446,6 +449,7 @@ paletteBtns.forEach(btn => {
     btn.addEventListener('click', () => {
         state.palette = btn.dataset.palette;
         state.isCustomPaletteOpen = (state.palette === 'custom');
+        state.interactiveObjects[state.theme] = {};
         updateActiveUI();
         updateHeartUI();
         triggerUpdate();
@@ -459,6 +463,7 @@ const handleBgChange = (val, inputEl = null) => {
     }
     if (/^#[0-9A-Fa-f]{6}$/.test(val)) {
         state.customPalette.bg = val;
+        state.interactiveObjects[state.theme] = {};
         updateCustomPaletteUI();
         updateHeartUI();
         triggerUpdate();
@@ -474,6 +479,7 @@ const handleAccentChange = (val, index, inputEl = null) => {
     }
     if (/^#[0-9A-Fa-f]{6}$/.test(val)) {
         state.customPalette.colors[index] = val;
+        state.interactiveObjects[state.theme] = {};
         updateCustomPaletteUI();
         updateHeartUI();
         triggerUpdate();
@@ -494,6 +500,7 @@ themeToggle.addEventListener('click', () => {
 wallpaperThemeToggle.addEventListener('click', () => {
     state.isWallpaperDark = !state.isWallpaperDark;
     if (wallpaperThemeLabel) wallpaperThemeLabel.textContent = state.isWallpaperDark ? 'Dark' : 'Light';
+    state.interactiveObjects[state.theme] = {};
     updateHeartUI();
     triggerUpdate();
 });
