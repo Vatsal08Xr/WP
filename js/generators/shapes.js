@@ -1,4 +1,4 @@
-export function generate(ctx, width, height, colors, rng, options = {}) {
+export function generate(ctx, width, height, colors, rng, options = {}, interactive = null) {
     ctx.fillStyle = colors.bg;
     ctx.fillRect(0, 0, width, height);
 
@@ -11,43 +11,50 @@ export function generate(ctx, width, height, colors, rng, options = {}) {
     const connect = options.connect || false;
 
     let shapes = [];
-    const totalShapes = numSquares + numTriangles + numCircles;
-    const exactSizeIndices = new Set();
-    const exactThickIndices = new Set();
-    for (let i = 0; i < 3; i++) {
-        exactSizeIndices.add(Math.floor(rng() * totalShapes));
-        exactThickIndices.add(Math.floor(rng() * totalShapes));
-    }
-    
-    let shapeIndex = 0;
-    // Generate shapes
-    const addShapes = (count, type) => {
-        for (let i = 0; i < count; i++) {
-            const isExactSize = exactSizeIndices.has(shapeIndex);
-            const isExactThick = exactThickIndices.has(shapeIndex);
-            
-            const baseRadius = sizeScale * 0.07 * Math.min(width, height);
-            const radius = isExactSize ? baseRadius : baseRadius * (1 - (0.05 + rng() * 0.15));
-            
-            const shapeThick = isExactThick ? userThick : userThick * (1 - (0.01 + rng() * 0.02));
 
-            shapes.push({
-                x: rng() * width,
-                y: rng() * height,
-                radius: radius,
-                thick: shapeThick,
-                type: type,
-                color: colors.colors[Math.floor(rng() * colors.colors.length)],
-                rotation: rng() * Math.PI * 2,
-                opacity: rng() * 0.6 + 0.2 // Between 0.2 and 0.8
-            });
-            shapeIndex++;
+    if (interactive && interactive.shapes && interactive.shapes.length > 0) {
+        shapes = interactive.shapes;
+    } else {
+        const totalShapes = numSquares + numTriangles + numCircles;
+        const exactSizeIndices = new Set();
+        const exactThickIndices = new Set();
+        for (let i = 0; i < 3; i++) {
+            exactSizeIndices.add(Math.floor(rng() * totalShapes));
+            exactThickIndices.add(Math.floor(rng() * totalShapes));
         }
-    };
+        
+        let shapeIndex = 0;
+        // Generate shapes
+        const addShapes = (count, type) => {
+            for (let i = 0; i < count; i++) {
+                const isExactSize = exactSizeIndices.has(shapeIndex);
+                const isExactThick = exactThickIndices.has(shapeIndex);
+                
+                const baseRadius = sizeScale * 0.07 * Math.min(width, height);
+                const radius = isExactSize ? baseRadius : baseRadius * (1 - (0.05 + rng() * 0.15));
+                
+                const shapeThick = isExactThick ? userThick : userThick * (1 - (0.01 + rng() * 0.02));
 
-    addShapes(numSquares, 'square');
-    addShapes(numTriangles, 'triangle');
-    addShapes(numCircles, 'circle');
+                shapes.push({
+                    x: rng() * width,
+                    y: rng() * height,
+                    radius: radius,
+                    thick: shapeThick,
+                    type: type,
+                    color: colors.colors[Math.floor(rng() * colors.colors.length)],
+                    rotation: rng() * Math.PI * 2,
+                    opacity: rng() * 0.6 + 0.2 // Between 0.2 and 0.8
+                });
+                shapeIndex++;
+            }
+        };
+
+        addShapes(numSquares, 'square');
+        addShapes(numTriangles, 'triangle');
+        addShapes(numCircles, 'circle');
+    }
+
+    if (interactive) interactive.shapes = shapes;
 
     // If connect is true, apply relaxation to avoid overlap
     if (connect && shapes.length > 0) {
@@ -156,4 +163,16 @@ export function generate(ctx, width, height, colors, rng, options = {}) {
 
         ctx.restore();
     });
+}
+
+export function getHitTarget(x, y, objects) {
+    for (let i = 0; i < objects.length; i++) {
+        const s = objects[i];
+        const dx = x - s.x;
+        const dy = y - s.y;
+        if (Math.sqrt(dx * dx + dy * dy) < s.radius * 1.5) {
+            return i;
+        }
+    }
+    return -1;
 }

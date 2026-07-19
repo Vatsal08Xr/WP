@@ -1,4 +1,4 @@
-export function drawGeometricCity(ctx, width, height, colors, rng) {
+export function drawGeometricCity(ctx, width, height, colors, rng, options, interactive = null) {
     ctx.fillStyle = colors.bg;
     ctx.fillRect(0, 0, width, height);
 
@@ -10,7 +10,22 @@ export function drawGeometricCity(ctx, width, height, colors, rng) {
     ctx.fillStyle = colors.colors[Math.floor(rng() * colors.colors.length)];
     ctx.globalAlpha = 0.2;
     ctx.beginPath();
-    ctx.arc(width * (rng() * 0.6 + 0.2), height * 0.4, Math.min(width, height) * 0.27, 0, Math.PI * 2);
+    
+    let sunX, sunY, sunRadius;
+    if (interactive && interactive.sun) {
+        sunX = interactive.sun.x;
+        sunY = interactive.sun.y;
+        sunRadius = interactive.sun.radius;
+    } else {
+        sunX = width * (rng() * 0.6 + 0.2);
+        sunY = height * 0.4;
+        sunRadius = Math.min(width, height) * 0.27;
+        if (interactive) {
+            interactive.sun = { x: sunX, y: sunY, radius: sunRadius };
+        }
+    }
+    
+    ctx.arc(sunX, sunY, sunRadius, 0, Math.PI * 2);
     ctx.fill();
     ctx.globalAlpha = 1.0;
 
@@ -52,4 +67,16 @@ export function drawGeometricCity(ctx, width, height, colors, rng) {
             ctx.globalAlpha = 1.0;
         }
     }
+}
+
+export function getHitTarget(x, y, objects) {
+    if (objects && objects.sun) {
+        const dx = x - objects.sun.x;
+        const dy = y - objects.sun.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < objects.sun.radius) {
+            return 'sun';
+        }
+    }
+    return null;
 }

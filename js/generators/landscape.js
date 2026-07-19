@@ -1,6 +1,6 @@
 import { createNoise2D } from 'https://esm.sh/simplex-noise@4.0.1';
 
-export function drawLandscape(ctx, width, height, colors, rng) {
+export function drawLandscape(ctx, width, height, colors, rng, options, interactive = null) {
     ctx.fillStyle = colors.bg;
     ctx.fillRect(0, 0, width, height);
 
@@ -11,10 +11,16 @@ export function drawLandscape(ctx, width, height, colors, rng) {
     ctx.fillStyle = sunColor;
     ctx.beginPath();
     
-    // Position sun strictly centered horizontally, 30% from top
-    const sunX = width * 0.5;
-    const sunY = height * 0.3;
     const sunRadius = Math.min(width, height) * 0.135;
+    let sunX, sunY;
+    if (interactive && interactive.sun) {
+        sunX = interactive.sun.x;
+        sunY = interactive.sun.y;
+    } else {
+        sunX = width * 0.5;
+        sunY = height * 0.3;
+    }
+    if (interactive) interactive.sun = { x: sunX, y: sunY, radius: sunRadius };
     ctx.arc(sunX, sunY, sunRadius, 0, Math.PI * 2);
     ctx.fill();
 
@@ -50,4 +56,15 @@ export function drawLandscape(ctx, width, height, colors, rng) {
         ctx.fill();
         ctx.globalAlpha = 1.0;
     }
+}
+
+export function getHitTarget(x, y, objects) {
+    if (!objects || !objects.sun) return null;
+    const dx = x - objects.sun.x;
+    const dy = y - objects.sun.y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    if (dist < objects.sun.radius) {
+        return 'sun';
+    }
+    return null;
 }

@@ -93,7 +93,7 @@
                     <a href="https://ko-fi.com/vatsal08xr" target="_blank" rel="noopener noreferrer" class="flex items-center gap-2 px-3 py-1.5 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors text-sm font-medium" title="Support on Ko-fi">
                         <i data-lucide="coffee" class="w-4 h-4 text-amber-600 dark:text-amber-400"></i> <span class="hidden xl:inline">Donate</span>
                     </a>
-                    <button id="theme-toggle" class="p-2 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors" title="Toggle Dark/Light Mode">
+                    <button id="theme-toggle" class="p-2 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors" title="Toggle Website Theme">
                         <i data-lucide="moon" class="w-5 h-5 dark:hidden"></i>
                         <i data-lucide="sun" class="w-5 h-5 hidden dark:block"></i>
                     </button>
@@ -252,7 +252,13 @@
                     </div>
                 </div>
                 <div class="space-y-3">
-                    <label class="block text-sm font-medium text-zinc-500 dark:text-zinc-400">Color Palette</label>
+                    <div class="flex items-center justify-between">
+                        <label class="block text-sm font-medium text-zinc-500 dark:text-zinc-400">Color Palette</label>
+                        <button id="wallpaper-theme-toggle" class="flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors text-zinc-600 dark:text-zinc-400" title="Toggle Wallpaper Dark/Light Colors">
+                            <i data-lucide="contrast" class="w-3.5 h-3.5"></i>
+                            <span id="wallpaper-theme-label">Dark</span>
+                        </button>
+                    </div>
                     <div class="grid grid-cols-4 gap-2" id="palette-grid">
                         <button class="option-btn palette-btn h-10 rounded-md border border-zinc-200 dark:border-zinc-800 overflow-hidden flex" data-palette="monochrome" title="Monochrome"><div class="flex-1 bg-[#cbd5e1]"></div><div class="flex-1 bg-[#64748b]"></div><div class="flex-1 bg-[#1e293b]"></div></button>
                         <button class="option-btn palette-btn h-10 rounded-md border border-zinc-200 dark:border-zinc-800 overflow-hidden flex" data-palette="cyberpunk" title="Cyberpunk"><div class="flex-1 bg-[#f472b6]"></div><div class="flex-1 bg-[#22d3ee]"></div><div class="flex-1 bg-[#818cf8]"></div></button>
@@ -353,7 +359,7 @@
                 <button id="mobile-btn-open-saved" class="p-2 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors text-zinc-700 dark:text-zinc-300" title="Saved Wallpapers">
                     <i data-lucide="bookmark" class="w-5 h-5"></i>
                 </button>
-                <button id="mobile-theme-toggle" class="p-2 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors">
+                <button id="mobile-theme-toggle" class="p-2 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors" title="Toggle Website Theme">
                     <i data-lucide="moon" class="w-5 h-5 dark:hidden"></i>
                     <i data-lucide="sun" class="w-5 h-5 hidden dark:block"></i>
                 </button>
@@ -543,7 +549,13 @@
                 </div>
                 <!-- Mobile Palettes -->
                 <div class="space-y-3">
-                    <label class="block text-sm font-medium text-zinc-500 dark:text-zinc-400">Color Palette</label>
+                    <div class="flex items-center justify-between">
+                        <label class="block text-sm font-medium text-zinc-500 dark:text-zinc-400">Color Palette</label>
+                        <button id="mobile-wallpaper-theme-toggle" class="flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors text-zinc-600 dark:text-zinc-400" title="Toggle Wallpaper Dark/Light Colors">
+                            <i data-lucide="contrast" class="w-3.5 h-3.5"></i>
+                            <span id="mobile-wallpaper-theme-label">Dark</span>
+                        </button>
+                    </div>
                     <div class="grid grid-cols-4 gap-2" id="mobile-palette-grid">
                         <button class="option-btn palette-btn h-10 rounded-md border border-zinc-200 dark:border-zinc-800 overflow-hidden flex" data-palette="monochrome" title="Monochrome"><div class="flex-1 bg-[#cbd5e1]"></div><div class="flex-1 bg-[#64748b]"></div><div class="flex-1 bg-[#1e293b]"></div></button>
                         <button class="option-btn palette-btn h-10 rounded-md border border-zinc-200 dark:border-zinc-800 overflow-hidden flex" data-palette="cyberpunk" title="Cyberpunk"><div class="flex-1 bg-[#f472b6]"></div><div class="flex-1 bg-[#22d3ee]"></div><div class="flex-1 bg-[#818cf8]"></div></button>

@@ -17,6 +17,11 @@ import { generate as drawShapes } from './generators/shapes.js';
 import { drawFluidArt } from './generators/fluidArt.js';
 import { store, renderSavedModal } from './store.js';
 import { generateRandomPalette } from './colorUtils.js';
+import { getHitTarget as particlesHit } from './generators/particles.js';
+import { getHitTarget as shapesHit } from './generators/shapes.js';
+import { getHitTarget as wavesHit } from './generators/waveInterference.js';
+import { getHitTarget as landscapeHit } from './generators/landscape.js';
+import { getHitTarget as geometricCityHit } from './generators/geometricCity.js';
 
 const generators = {
     topography: drawTopography,
@@ -40,6 +45,7 @@ let state = {
     themeName: 'Topography',
     palette: 'monochrome',
     isDark: true,
+    isWallpaperDark: true,
     previewMode: 'desktop',
     isLocked: false,
     isCustomPaletteOpen: false,
@@ -53,7 +59,8 @@ let state = {
         waveInterference: { num: 3, amp: 100, thick: 2 },
         shapes: { squares: 20, triangles: 20, circles: 50, size: 100, thick: 2, fill: false, connect: false },
         fluidArt: { density: 50, turbulence: 50, cells: 50 }
-    }
+    },
+    interactiveObjects: {}
 };
 
 try {
@@ -69,6 +76,11 @@ try {
                 fluidArt: { ...state.themeOptions.fluidArt, ...parsed.themeOptions.fluidArt }
             };
         }
+        // Restore isWallpaperDark (defaults to isDark for backward compat)
+        if (parsed.isWallpaperDark === undefined && parsed.isDark !== undefined) {
+            state.isWallpaperDark = parsed.isDark;
+        }
+        state.interactiveObjects = {};
     }
 } catch(e) {}
 
@@ -97,6 +109,8 @@ const btnCloseSaved = document.getElementById('btn-close-saved');
 const savedModal = document.getElementById('saved-modal');
 const savedModalBackdrop = document.getElementById('saved-modal-backdrop');
 const savedModalContent = document.getElementById('saved-modal-content');
+const wallpaperThemeToggle = document.getElementById('wallpaper-theme-toggle');
+const wallpaperThemeLabel = document.getElementById('wallpaper-theme-label');
 
 
 const customPaletteEditor = document.getElementById('custom-palette-editor');
@@ -251,7 +265,7 @@ function getColors() {
     if (state.palette === 'custom') {
         return state.customPalette;
     }
-    return palettes[state.palette][state.isDark ? 'dark' : 'light'];
+    return palettes[state.palette][state.isWallpaperDark ? 'dark' : 'light'];
 }
 
 function updateActiveUI() {
@@ -402,7 +416,14 @@ function render(width, height) {
     
     const colors = getColors();
     const rng = seedrandom(state.seed);
-    generatorFn(ctx, width, height, colors, rng, state.themeOptions?.[state.theme]);
+    
+    // Ensure interactive objects bucket exists for this theme
+    if (!state.interactiveObjects[state.theme]) {
+        state.interactiveObjects[state.theme] = {};
+    }
+    const interactive = state.interactiveObjects[state.theme];
+    
+    generatorFn(ctx, width, height, colors, rng, state.themeOptions?.[state.theme], interactive);
 }
 
 
@@ -414,6 +435,7 @@ themeBtns.forEach(btn => {
         state.theme = btn.dataset.theme;
         state.themeName = btn.dataset.name;
         state.seed = Math.random().toString(36).substring(2, 15);
+        state.interactiveObjects[state.theme] = {};
         updateActiveUI();
         updateHeartUI();
         triggerUpdate();
@@ -466,13 +488,20 @@ themeToggle.addEventListener('click', () => {
     state.isDark = !state.isDark;
     document.documentElement.classList.toggle('dark', state.isDark);
     updateHeartUI();
+    try { localStorage.setItem('wallgen_session', JSON.stringify(state)); } catch(e) {}
+});
+
+wallpaperThemeToggle.addEventListener('click', () => {
+    state.isWallpaperDark = !state.isWallpaperDark;
+    if (wallpaperThemeLabel) wallpaperThemeLabel.textContent = state.isWallpaperDark ? 'Dark' : 'Light';
+    updateHeartUI();
     triggerUpdate();
 });
 
 btnGenerate.addEventListener('click', () => {
     if (state.isLocked) {
         // Randomize colors using HSL generator instead of new pattern
-        const newColors = generateRandomPalette(state.isDark);
+        const newColors = generateRandomPalette(state.isWallpaperDark);
         state.palette = 'custom';
         state.customPalette = newColors;
         updateCustomPaletteUI();
@@ -480,6 +509,7 @@ btnGenerate.addEventListener('click', () => {
     } else {
         // Generate entirely new pattern variation
         state.seed = Math.random().toString(36).substring(2, 15);
+        state.interactiveObjects[state.theme] = {};
         updateHeartUI();
     }
     triggerUpdate();
@@ -563,6 +593,7 @@ btnDlIphone.addEventListener('click', () => {
 
 function init() {
     lucide.createIcons();
+    if (wallpaperThemeLabel) wallpaperThemeLabel.textContent = state.isWallpaperDark ? 'Dark' : 'Light';
     updateActiveUI();
     triggerUpdate();
     window.addEventListener('saved-wallpapers-changed', updateHeartUI);
@@ -573,3 +604,131 @@ if (document.readyState === 'complete' || document.readyState === 'interactive')
 } else {
     window.addEventListener('load', init);
 }
+
+// ─── Interactive Canvas (Drag Support) ──────────────────────────────────
+
+const hitTesters = {
+    particles: particlesHit,
+    shapes: shapesHit,
+    waveInterference: wavesHit,
+    landscape: landscapeHit,
+    geometricCity: geometricCityHit
+};
+
+let dragState = {
+    dragging: false,
+    theme: null,
+    targetIndex: null,
+    startX: 0,
+    startY: 0,
+    startObjX: 0,
+    startObjY: 0
+};
+
+function canvasToPixel(e) {
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    return {
+        x: (e.clientX - rect.left) * scaleX,
+        y: (e.clientY - rect.top) * scaleY
+    };
+}
+
+function getObjectsForTheme(theme) {
+    const io = state.interactiveObjects[theme];
+    if (!io) return null;
+    if (theme === 'particles') return io.particles;
+    if (theme === 'shapes') return io.shapes;
+    if (theme === 'waveInterference') return io.waves;
+    if (theme === 'landscape') return io.sun ? io : null;
+    if (theme === 'geometricCity') return io.sun ? io : null;
+    return null;
+}
+
+canvas.addEventListener('pointerdown', (e) => {
+    const hitFn = hitTesters[state.theme];
+    if (!hitFn) return;
+    
+    const { x, y } = canvasToPixel(e);
+    const objects = getObjectsForTheme(state.theme);
+    if (!objects) return;
+    
+    const hit = hitFn(x, y, objects);
+    if (hit === -1 || hit === null) return;
+    
+    dragState.dragging = true;
+    dragState.theme = state.theme;
+    dragState.targetIndex = hit;
+    dragState.startX = x;
+    dragState.startY = y;
+    
+    if (state.theme === 'particles' && objects[hit]) {
+        dragState.startObjX = objects[hit].x;
+        dragState.startObjY = objects[hit].y;
+    } else if (state.theme === 'shapes' && objects[hit]) {
+        dragState.startObjX = objects[hit].x;
+        dragState.startObjY = objects[hit].y;
+    } else if (state.theme === 'waveInterference' && objects[hit]) {
+        dragState.startObjX = objects[hit].xOffset || 0;
+        dragState.startObjY = objects[hit].yCenter;
+    } else if ((state.theme === 'landscape' || state.theme === 'geometricCity') && objects.sun) {
+        dragState.startObjX = objects.sun.x;
+        dragState.startObjY = objects.sun.y;
+    }
+    
+    canvas.style.cursor = 'grabbing';
+    e.preventDefault();
+});
+
+canvas.addEventListener('pointermove', (e) => {
+    // Update cursor on hover
+    const hitFn = hitTesters[state.theme];
+    if (hitFn && !dragState.dragging) {
+        const { x, y } = canvasToPixel(e);
+        const objects = getObjectsForTheme(state.theme);
+        if (objects) {
+            const hit = hitFn(x, y, objects);
+            canvas.style.cursor = (hit !== -1 && hit !== null) ? 'grab' : '';
+        }
+    }
+    
+    if (!dragState.dragging) return;
+    e.preventDefault();
+    
+    const { x, y } = canvasToPixel(e);
+    const dx = x - dragState.startX;
+    const dy = y - dragState.startY;
+    const io = state.interactiveObjects[dragState.theme];
+    
+    if (dragState.theme === 'particles' && io.particles) {
+        io.particles[dragState.targetIndex].x = dragState.startObjX + dx;
+        io.particles[dragState.targetIndex].y = dragState.startObjY + dy;
+    } else if (dragState.theme === 'shapes' && io.shapes) {
+        io.shapes[dragState.targetIndex].x = dragState.startObjX + dx;
+        io.shapes[dragState.targetIndex].y = dragState.startObjY + dy;
+    } else if (dragState.theme === 'waveInterference' && io.waves) {
+        io.waves[dragState.targetIndex].xOffset = dragState.startObjX + dx;
+        io.waves[dragState.targetIndex].yCenter = dragState.startObjY + dy;
+    } else if ((dragState.theme === 'landscape' || dragState.theme === 'geometricCity') && io.sun) {
+        io.sun.x = dragState.startObjX + dx;
+        io.sun.y = dragState.startObjY + dy;
+    }
+    
+    // Fast re-render without debounce
+    render(canvas.width, canvas.height);
+});
+
+canvas.addEventListener('pointerup', () => {
+    if (dragState.dragging) {
+        dragState.dragging = false;
+        canvas.style.cursor = '';
+    }
+});
+
+canvas.addEventListener('pointerleave', () => {
+    if (dragState.dragging) {
+        dragState.dragging = false;
+        canvas.style.cursor = '';
+    }
+});
