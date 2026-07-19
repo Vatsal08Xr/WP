@@ -11,13 +11,16 @@ export function drawGeometricCity(ctx, width, height, colors, rng, options, inte
     ctx.globalAlpha = 0.2;
     ctx.beginPath();
     
+    // Always consume rng() to keep the procedural generation sequence in sync for the buildings
+    const genSunX = width * (rng() * 0.6 + 0.2);
+    
     let sunX, sunY, sunRadius;
     if (interactive && interactive.sun) {
         sunX = interactive.sun.x;
         sunY = interactive.sun.y;
         sunRadius = interactive.sun.radius;
     } else {
-        sunX = width * (rng() * 0.6 + 0.2);
+        sunX = genSunX;
         sunY = height * 0.4;
         sunRadius = Math.min(width, height) * 0.27;
         if (interactive) {
